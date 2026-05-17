@@ -1,1 +1,38 @@
 /* Portfolio page CSS — Webflow Portfolio Page Settings → Inside <head> tag */
+
+/* Loader */
+.loader {
+  pointer-events: none;
+}
+.loader--done {
+  display: none;
+}
+
+/* Lenis smooth scroll */
+html.lenis {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* Prevent scroll blocking during GSAP animations */
+.gsap-animating {
+  pointer-events: none;
+}
+
+/* Grid item performance hints */
+.grid__item-img,
+.grid__item-img-inner {
+  will-change: transform, opacity;
+  contain: layout paint;
+}
