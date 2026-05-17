@@ -278,14 +278,6 @@
       this.boundTouchStart = this.handleTouchStart.bind(this);
       this.boundTouchEnd = this.handleTouchEnd.bind(this);
 
-      // [SCRUB] state for video scrub mode (when magic is OFF)
-      this.video = null;
-      this.scrubActive = false;
-      this.scrubTarget = 0;
-      this.scrubCurrent = 0;
-      this.scrubTicker = null;
-      this.boundScrubMove = this.handleScrubMove.bind(this);
-
       // [TOGGLE-ANIM] cached ref to .toggle_inner. We don't pre-build a timeline
       // because IN and OUT have different shapes (sequential 0.4s vs parallel 0.2s),
       // so each tween is built on demand inside handleToggle().
@@ -356,9 +348,6 @@
       document.body.removeEventListener('touchstart', this.boundTouchStart);
       document.body.removeEventListener('touchmove', this.boundTouchMove);
       document.body.removeEventListener('touchend', this.boundTouchEnd);
-
-      // [SCRUB] also tear down scrub listeners and ticker
-      this.disableScrubMode();
 
       // [TOGGLE-ANIM] stop any in-flight toggle tween
       if (this.toggleInner) gsap.killTweensOf(this.toggleInner);
@@ -517,14 +506,9 @@
         });
 
         this.heroHidden = false;
-
-        // [SCRUB] take over the video — cursor Y now drives currentTime
-        this.enableScrubMode();
       } else {
-        // Magic ON: release the video, reset state, and let the FIRST mousemove
+        // Magic ON: reset state, and let the FIRST mousemove
         // trigger hideHeroContent the same way it does on initial page load.
-        this.disableScrubMode();
-
         this.lastMousePos = { ...this.mousePos };
         this.isHidingImages = false;
         this.hideQuickly = false;
@@ -539,72 +523,6 @@
       setTimeout(() => {
         this.isToggling = false;
       }, 600);
-    }
-
-    // [SCRUB] -------- VIDEO SCRUB MODE --------
-    // Maps cursor Y (0 → viewportHeight) to video.currentTime (0 → duration).
-    // Smoothed via gsap.ticker + lerp so quick mouse-shakes don't thrash the decoder.
-    // Also toggles a class on .coords so the HUD switches into "scrubbing" display.
-
-    enableScrubMode() {
-      if (!this.video) {
-        this.video = document.querySelector('.blur-background video')
-            || document.querySelector('video:not(.stories-slide_media):not(.stories-preview_img)');
-      }
-      if (!this.video) return;
-
-      this.scrubActive = true;
-      document.querySelector('.coords')?.classList.add('is-scrubbing');
-
-      const start = () => {
-        // Guard: user might have toggled magic back ON before metadata loaded
-        if (!this.scrubActive) return;
-
-        this.video.pause();
-        this.scrubCurrent = this.video.currentTime || 0;
-        this.scrubTarget = this.scrubCurrent;
-
-        document.addEventListener('mousemove', this.boundScrubMove);
-
-        this.scrubTicker = () => {
-          // Lerp toward target — feels like a soft spring instead of jittery snap
-          this.scrubCurrent += (this.scrubTarget - this.scrubCurrent) * 0.12;
-          // Only write when decoder has data, avoids piling up seek requests
-          if (this.video.readyState >= 2) {
-            this.video.currentTime = this.scrubCurrent;
-          }
-        };
-        gsap.ticker.add(this.scrubTicker);
-      };
-
-      if (isNaN(this.video.duration) || this.video.readyState < 1) {
-        this.video.addEventListener('loadedmetadata', start, { once: true });
-      } else {
-        start();
-      }
-    }
-
-    disableScrubMode() {
-      this.scrubActive = false;
-      document.querySelector('.coords')?.classList.remove('is-scrubbing');
-
-      if (!this.video) return;
-
-      document.removeEventListener('mousemove', this.boundScrubMove);
-
-      if (this.scrubTicker) {
-        gsap.ticker.remove(this.scrubTicker);
-        this.scrubTicker = null;
-      }
-
-      // Resume native loop playback
-      this.video.play().catch(() => {});
-    }
-
-    handleScrubMove(e) {
-      if (!this.video || isNaN(this.video.duration)) return;
-      const ratio = Math.min(1, Math.max(0, e.clientY / window.innerHeight));
-      this.scrubTarget = ratio * this.video.duration;
     }
 
     hideImagesSequentially() {
@@ -646,42 +564,6 @@
         }, index * 100);
       });
     }
-  }
-
-  // -------- COORD DISPLAY --------
-  // Default mode: "X: 1234px   Y: 567px" — full coordinates as a technical HUD.
-  // Scrub mode (.coords.is-scrubbing): "Y: 78%" only — single meaningful axis,
-  // colored acid-yellow via CSS to signal it's actively driving the video.
-  const coordsDisplay = document.querySelector(".coords");
-  if (coordsDisplay) {
-    coordsDisplay.innerHTML =
-      '<span class="coords__group coords__group--x">' +
-        '<span class="coords__label">&nbsp;</span>' +
-        '<span class="coords__val">0</span>' +
-      '</span>' +
-      '<span class="coords__group coords__group--y">' +
-        '<span class="coords__label">&nbsp;&nbsp;&nbsp;</span>' +
-        '<span class="coords__mask">' +
-          '<span class="coords__val coords__val--px">0</span>' +
-          '<span class="coords__val coords__val--pct">0</span>' +
-        '</span>' +
-      '</span>';
-
-    const xEl    = coordsDisplay.querySelector('.coords__group--x .coords__val');
-    const yPxEl  = coordsDisplay.querySelector('.coords__val--px');
-    const yPctEl = coordsDisplay.querySelector('.coords__val--pct');
-
-    const updateCoords = throttle((event) => {
-      const touch = event.touches ? event.touches[0] : event;
-      const percent = Math.round((touch.clientY / window.innerHeight) * 100);
-
-      xEl.textContent    = touch.clientX;
-      yPxEl.textContent  = touch.clientY;
-      yPctEl.textContent = percent;
-    }, 100);
-
-    document.addEventListener("mousemove", updateCoords);
-    document.addEventListener("touchmove", updateCoords);
   }
 
   // -------- MOBILE THUMBNAIL ANIMATION (SWIPE VERSION) --------
