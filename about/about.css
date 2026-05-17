@@ -1,1 +1,40 @@
 /* About page CSS — Webflow About Page Settings → Inside <head> tag */
+
+/* Loader */
+.loader {
+  pointer-events: none;
+}
+.loader--done {
+  display: none;
+}
+
+/* Lenis smooth scroll */
+html.lenis {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* Prevent scroll blocking during GSAP animations */
+.gsap-animating {
+  pointer-events: none;
+}
+
+.job-logo-trail {
+  border-radius: 0.325rem;
+  overflow: hidden;
+}
+
+.typed-words p + p {
+  text-indent: 10rem;
+}
