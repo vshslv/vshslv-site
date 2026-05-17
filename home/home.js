@@ -566,6 +566,32 @@
     }
   }
 
+  // -------- COORD DISPLAY (X / Y in pixels, image-trail HUD) --------
+  const coordsDisplay = document.querySelector(".coords");
+  if (coordsDisplay) {
+    coordsDisplay.innerHTML =
+      '<span class="coords__group coords__group--x">' +
+        '<span class="coords__label">&nbsp;</span>' +
+        '<span class="coords__val">0</span>' +
+      '</span>' +
+      '<span class="coords__group coords__group--y">' +
+        '<span class="coords__label">&nbsp;&nbsp;&nbsp;</span>' +
+        '<span class="coords__val">0</span>' +
+      '</span>';
+
+    const xEl = coordsDisplay.querySelector('.coords__group--x .coords__val');
+    const yEl = coordsDisplay.querySelector('.coords__group--y .coords__val');
+
+    const updateCoords = throttle((event) => {
+      const touch = event.touches ? event.touches[0] : event;
+      xEl.textContent = touch.clientX;
+      yEl.textContent = touch.clientY;
+    }, 100);
+
+    document.addEventListener("mousemove", updateCoords);
+    document.addEventListener("touchmove", updateCoords);
+  }
+
   // -------- MOBILE THUMBNAIL ANIMATION (SWIPE VERSION) --------
   function runThumbnailAnimation() {
     if (!isMobile()) return;

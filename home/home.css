@@ -8,6 +8,22 @@
   display: none;
 }
 
+/* Coords HUD (X / Y in pixels) */
+.coords {
+  display: inline-flex;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.coords__group {
+  display: inline-flex;
+  align-items: baseline;
+}
+.coords__val {
+  display: inline-block;
+  white-space: nowrap;
+}
+
 /* Featured droplist hover dim */
 @media (hover: hover) {
   [data-droplist="featured"] .general-link {
