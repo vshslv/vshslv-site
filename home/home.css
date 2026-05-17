@@ -1,3 +1,75 @@
 /* Home page CSS — Webflow Home Page Settings → Inside <head> tag */
 
-/* Add Home-specific styles here. Stories live in vshslv-stories repo. */
+/* Loader */
+.loader {
+  pointer-events: none;
+}
+.loader--done {
+  display: none;
+}
+
+/* Coords HUD */
+.coords {
+  display: inline-flex;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.coords__group {
+  display: inline-flex;
+  align-items: baseline;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.coords__mask {
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+  height: 1em;
+  vertical-align: bottom;
+  text-align: right;
+  min-width: 2ch;
+}
+.coords__val {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.coords__val--pct {
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: translateY(100%);
+}
+.coords.is-scrubbing .coords__val--px  { transform: translateY(-100%); }
+.coords.is-scrubbing .coords__val--pct { transform: translateY(0%); }
+
+.coords__group--x {
+  max-width: 6ch;
+  overflow: hidden;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+    max-width 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.coords.is-scrubbing .coords__group--x {
+  opacity: 0;
+  transform: translateX(-8px);
+  pointer-events: none;
+  max-width: 0;
+}
+
+/* Featured droplist hover dim */
+@media (hover: hover) {
+  [data-droplist="featured"] .general-link {
+    transition: filter 0.3s ease, opacity 0.3s ease;
+  }
+  [data-droplist="featured"]:has(.general-link:hover) .general-link:not(:hover) {
+    filter: opacity(0.5);
+  }
+  [data-droplist="featured"] .general-link:hover {
+    opacity: 1;
+  }
+}
