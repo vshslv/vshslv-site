@@ -1,3 +1,137 @@
-/* Global CSS — applied site-wide via Webflow Site Settings → Inside <head> tag */
+/* Global CSS — Webflow Site Settings → Inside <head> tag */
 
-/* Add your site-wide styles here */
+/* ====================================================
+   RESPONSIVE FONT-SIZE CALCULATIONS
+   Fluid typography system for optimal scaling
+   ==================================================== */
+html {
+  font-size: calc(-0.0006236080178174674rem + 1vw);
+}
+@media screen and (max-width: 1440px) {
+  html {
+    font-size: calc(-0.0006236080178174674rem + 1.111804008908686vw);
+  }
+}
+@media screen and (max-width: 991px) {
+  html {
+    font-size: calc(0.00016071428571418078rem + 2.085714285714286vw);
+  }
+}
+@media screen and (max-width: 767px) {
+  html {
+    font-size: calc(0.0010050251256281673rem + 2.814070351758794vw);
+  }
+}
+@media screen and (max-width: 568px) {
+  html {
+    font-size: calc(-0.0019775280898881586rem + 2.822471910112361vw);
+  }
+}
+@media screen and (max-width: 479px) {
+  html {
+    font-size: calc(0.0008988764044947084rem + 4.098876404494381vw);
+  }
+}
+@media screen and (max-width: 390px) {
+  html {
+    font-size: calc(-0.002570694087403599rem + 4.113110539845758vw);
+  }
+}
+
+/* ====================================================
+   UNIVERSAL FONT SMOOTHING
+   ==================================================== */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -o-font-smoothing: antialiased;
+}
+
+/* ====================================================
+   MONOSPACE FONT OPTIMIZATION (Bull 5 Mono - 400 only)
+   ==================================================== */
+body, p, h1, h2, h3, h4, h5, h6,
+span, div, a, li, button, input, textarea {
+  font-synthesis: none !important;
+  font-weight: 400 !important;
+  text-rendering: geometricPrecision !important;
+  -webkit-font-smoothing: subpixel-antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* ====================================================
+   WINDOWS EDGE SPECIFIC FIXES
+   ==================================================== */
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+  body, p, h1, h2, h3, h4, h5, h6, span, div, a {
+    font-weight: 400 !important;
+    -ms-font-smoothing: antialiased;
+    text-shadow: 0 0 0.35px rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* ====================================================
+   MENU LINK TEXT SPECIFIC OPTIMIZATION
+   (Kept for legacy copy-button _01/_02 elements)
+   ==================================================== */
+.menu_link-text {
+  font-weight: 400 !important;
+  font-synthesis: none !important;
+  -webkit-font-smoothing: subpixel-antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: geometricPrecision !important;
+  letter-spacing: -0.01em;
+}
+
+/* ====================================================
+   PREVENTIVE MEASURES: BLOCK BOLD INHERITANCE
+   ==================================================== */
+html { font-weight: 400 !important; }
+body { font-weight: inherit !important; }
+strong, b, .bold, .w-bold, h1, h2, h3, h4, h5, h6 {
+  font-weight: 400 !important;
+}
+
+/* ====================================================
+   TEXT SELECTION STYLING
+   ==================================================== */
+::selection {
+  background: #feff00;
+  color: #000000;
+  text-shadow: none;
+}
+::-moz-selection {
+  background: #ff6c00;
+  color: #000000;
+  text-shadow: none;
+}
+
+/* ====================================================
+   LOADER DISPLAY CONTROL
+   ==================================================== */
+.loader { display: flex; }
+html.w-editor .loader { display: none; }
+
+/* ====================================================
+   SINGLE WEIGHT FIX
+   ==================================================== */
+@supports (font-variation-settings: normal) {
+  body { font-variation-settings: 'wght' 400; }
+}
+.w-editor *, .w-site *, .w-richtext * {
+  font-weight: 400 !important;
+  font-synthesis: none !important;
+}
+
+/* ====================================================
+   WINDOWS CLEARTYPE EMULATION
+   ==================================================== */
+@media screen and (min-width: 768px) {
+  body, p, span, div:not(.loader) {
+    text-shadow:
+      0.25px 0 0.1px rgba(0, 0, 0, 0.15),
+      -0.25px 0 0.1px rgba(0, 0, 0, 0.15),
+      0 0.25px 0.1px rgba(0, 0, 0, 0.15),
+      0 -0.25px 0.1px rgba(0, 0, 0, 0.15);
+  }
+}
