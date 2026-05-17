@@ -556,3 +556,27 @@
     init();
   }
 })();
+
+/* ============================================
+   PAUSE VIDEOS WHEN TAB IS HIDDEN
+   ============================================ */
+(function () {
+  var pausedByVisibility = [];
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      pausedByVisibility = [];
+      document.querySelectorAll('video').forEach(function (v) {
+        if (!v.paused) {
+          pausedByVisibility.push(v);
+          v.pause();
+        }
+      });
+    } else {
+      pausedByVisibility.forEach(function (v) {
+        var p = v.play();
+        if (p && p.catch) p.catch(function () {});
+      });
+      pausedByVisibility = [];
+    }
+  });
+})();
