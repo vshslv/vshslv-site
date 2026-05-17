@@ -592,6 +592,37 @@
     document.addEventListener("touchmove", updateCoords);
   }
 
+  // -------- IDLE: pause background video after 10s of no activity --------
+  (function () {
+    const bgVideo = document.querySelector('video:not(.stories-slide_media):not(.stories-preview_img)');
+    if (!bgVideo) return;
+
+    const IDLE_MS = 10000;
+    let lastActivity = Date.now();
+    let pausedByIdle = false;
+
+    function markActivity() {
+      lastActivity = Date.now();
+      if (pausedByIdle && bgVideo.paused) {
+        const p = bgVideo.play();
+        if (p && p.catch) p.catch(function () {});
+        pausedByIdle = false;
+      }
+    }
+
+    ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'touchmove', 'wheel'].forEach(function (ev) {
+      window.addEventListener(ev, markActivity, { passive: true });
+    });
+
+    setInterval(function () {
+      if (document.hidden) return; // visibility handler in global.js owns the video here
+      if (!bgVideo.paused && Date.now() - lastActivity > IDLE_MS) {
+        bgVideo.pause();
+        pausedByIdle = true;
+      }
+    }, 2000);
+  })();
+
   // -------- MOBILE THUMBNAIL ANIMATION (SWIPE VERSION) --------
   function runThumbnailAnimation() {
     if (!isMobile()) return;
