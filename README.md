@@ -11,7 +11,7 @@ about/       → About page only
 portfolio/   → Portfolio page only
 ```
 
-Stories assets (`home/stories.css` + `home/stories.js`) live here too and are loaded only on Home.
+Stories logic is inlined into `home/home.css` and `home/home.js`.
 
 ## Webflow setup
 
@@ -32,13 +32,11 @@ Stories assets (`home/stories.css` + `home/stories.js`) live here too and are lo
 **Inside `<head>` tag:**
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/vshslv/vshslv-site@main/home/home.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/vshslv/vshslv-site@main/home/stories.css">
 ```
 
 **Before `</body>` tag:**
 ```html
 <script src="https://cdn.jsdelivr.net/gh/vshslv/vshslv-site@main/home/home.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/vshslv/vshslv-site@main/home/stories.js" defer></script>
 ```
 
 ### About Page Settings → Custom Code

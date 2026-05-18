@@ -1,4 +1,5 @@
 /* Home page CSS — Webflow Home Page Settings → Inside <head> tag */
+@import url('https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css');
 
 /* Loader */
 .loader {
@@ -46,4 +47,88 @@ html, body {
   inset: 0;
   width: 100%;
   overscroll-behavior: none;
+}
+
+/* ============================================
+   STORIES
+   ============================================ */
+@keyframes vshStoriesShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.stories-slide_skeleton{animation:vshStoriesShimmer 1.4s linear infinite;opacity:1;transition:opacity .3s ease;pointer-events:none;z-index:1}
+.stories-slide.is-loaded .stories-slide_skeleton{opacity:0}
+.stories-slide .stories-slide_media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .35s ease;z-index:2}
+.stories-slide.is-loaded .stories-slide_media{opacity:1}
+.stories-slide video.stories-slide_media{z-index:3}
+.stories-modal{backdrop-filter:blur(0px)!important;-webkit-backdrop-filter:blur(0px)!important;transition:backdrop-filter .8s cubic-bezier(0,0,0.2,1),-webkit-backdrop-filter .8s cubic-bezier(0,0,0.2,1)!important}
+.stories-modal.is-open{opacity:1!important;pointer-events:auto!important;backdrop-filter:blur(30px)!important;-webkit-backdrop-filter:blur(30px)!important}
+.stories-modal.is-closing{transition:backdrop-filter .35s cubic-bezier(0.4,0,1,1),-webkit-backdrop-filter .35s cubic-bezier(0.4,0,1,1)!important}
+body.stories-locked{overflow:hidden}
+
+/* Preview radius controlled from Designer (no override here) */
+
+.stories-modal_inner{border-radius:0.625rem!important;overflow:hidden;box-shadow:none!important;transition:transform .8s cubic-bezier(0,0,0.2,1);transform-origin:center center;will-change:transform}
+.stories-modal.is-closing .stories-modal_inner{transition:transform .35s cubic-bezier(0.4,0,1,1)!important}
+
+.stories-slide_caption{margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;bottom:0.625rem!important;font-family:inherit!important;font-size:0.7rem!important;font-weight:inherit!important;letter-spacing:inherit!important;text-shadow:none!important}
+.stories-slide_caption:empty{display:none}
+.stories-slide.is-loaded.has-caption .stories-slide_caption{opacity:1;transform:translateY(0)}
+.stories-slide.has-caption::after{content:"";position:absolute;left:0;right:0;bottom:0;height:38%;background:linear-gradient(to top,rgba(0,0,0,.6),rgba(0,0,0,0));z-index:4;pointer-events:none;opacity:0;transition:opacity .35s ease}
+.stories-slide.is-loaded.has-caption::after{opacity:1}
+
+.stories-preview{user-select:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
+.stories-preview:hover{transform:scale(1.04)}
+.stories-preview:active{transform:scale(.96)}
+
+.stories-modal_bars{position:fixed!important;top:0!important;left:0!important;right:0!important;width:auto!important;height:1px!important;display:flex!important;gap:0!important;z-index:10001;pointer-events:none;opacity:0;transition:opacity .35s cubic-bezier(0.4,0,1,1)}
+.stories-modal_bars.is-active{opacity:1;transition:opacity .8s cubic-bezier(0,0,0.2,1)}
+.stories-modal_bar{position:relative;height:1px!important;background-color:rgba(255,255,255,.25)!important;border-radius:0!important;overflow:hidden;flex:1 1 0%!important}
+.stories-modal_bar-fill{position:absolute;top:0;left:0;bottom:0;width:0;background:#fff;border-radius:0}
+.stories-modal_bar.is-done .stories-modal_bar-fill{width:100%}
+
+.stories-modal_nav{display:none!important}
+
+.stories-modal_inner .swiper{width:100%;height:100%}
+.stories-modal_wrapper{width:100%;height:100%}
+.stories-modal_wrapper .w-dyn-list{width:100%;height:100%}
+.stories-modal_inner .swiper-wrapper{width:100%;height:100%}
+.stories-modal_inner .swiper-slide{width:100%;height:100%;flex-shrink:0;position:relative}
+.stories-modal_inner .swiper-slide > .stories-slide{width:100%;height:100%;position:relative}
+
+.stories-modal,
+.stories-modal_inner,
+.stories-modal_inner *{cursor:pointer}
+
+.stories-cursor-tag{position:fixed;top:0;left:0;pointer-events:none;opacity:0;transition:opacity .18s cubic-bezier(0.215,0.61,0.355,1);z-index:10000;color:#fff;padding:6px 10px;white-space:nowrap;font-size:0.7rem;line-height:1;letter-spacing:0;will-change:transform;transform:translate3d(-9999px,-9999px,0)}
+.stories-cursor-tag.is-visible{opacity:1}
+.stories-cursor-tag_mask{display:inline-block;position:relative;overflow:hidden;vertical-align:top;line-height:1;height:1em;min-width:3em;text-align:center}
+.stories-cursor-tag_layer{position:absolute;top:0;left:0;right:0;display:block;text-align:center;line-height:1;transition:transform .45s cubic-bezier(.65,.05,.2,1);will-change:transform}
+.stories-cursor-tag_layer.is-below{transform:translateY(110%)}
+.stories-cursor-tag_layer.is-out{transform:translateY(-110%)}
+.stories-cursor-tag_layer.no-tx{transition:none!important}
+
+/* Single 9:16 modal centred in viewport with 2.52rem padding */
+.stories-modal_inner{
+  width: min(calc(100vw - 5.04rem), calc((100vh - 5.04rem) * 9 / 16))!important;
+  height: min(calc(100vh - 5.04rem), calc((100vw - 5.04rem) * 16 / 9))!important;
+  max-width:none!important;
+  max-height:none!important;
+  aspect-ratio:auto!important;
+}
+.stories-modal_inner .swiper-slide{
+  width:100%!important;
+  height:100%!important;
+  flex-shrink:0!important;
+  position:relative;
+}
+.stories-modal_inner .swiper-slide > .stories-slide{
+  width:100%;height:100%;position:relative
+}
+
+/* Sound toggle — caption-style label in top-right corner of slide */
+.stories-sound-toggle{position:absolute;top:0.625rem;right:0.625rem;z-index:5;background:transparent!important;border:0!important;color:#fff;cursor:pointer;padding:0;margin:0;font-family:inherit;font-size:0.7rem;font-weight:inherit;letter-spacing:inherit;line-height:1.35;text-shadow:0 1px 12px rgba(0,0,0,0.45);opacity:0;pointer-events:none;transition:opacity .25s ease}
+.stories-modal.is-open .stories-sound-toggle{opacity:1;pointer-events:auto}
+.stories-modal.is-closing .stories-sound-toggle{opacity:0;pointer-events:none}
+.stories-sound-toggle:hover{opacity:0.7}
+
+@media (max-width:640px){
+  .stories-cursor-tag{display:none}
 }
