@@ -504,7 +504,13 @@
     var g = window.gsap;
     var list = document.querySelector('[data-droplist="featured"]');
     if (!list) return;
-    var icon = list.querySelector('.droplist-icon');
+
+    // Icon lives outside the list — sibling under .list-wrapper. Fall back to inside-list (legacy) too.
+    var wrap = list.parentElement || list;
+    var icon = wrap.querySelector('.dropdown-arrow-icon') || list.querySelector('.droplist-icon');
+    // Hover on the whole wrapper so cursor over label/arrow also opens the list.
+    var hoverEl = (icon && !list.contains(icon)) ? wrap : list;
+
     var items = [].slice.call(list.children).filter(function (n) { return n !== icon; });
     if (items.length <= 9) return;
     var extras = items.slice(9);
@@ -516,13 +522,13 @@
         icon.style.transition = 'transform .35s ease';
         icon.style.transformOrigin = '50% 50%';
       }
-      list.addEventListener('mouseenter', function () {
+      hoverEl.addEventListener('mouseenter', function () {
         extras.forEach(function (n) {
           n.style.cssText = 'opacity:1;transform:none;pointer-events:auto;transition:opacity .35s,transform .35s';
         });
         if (icon) icon.style.transform = 'rotate(180deg)';
       });
-      list.addEventListener('mouseleave', function () {
+      hoverEl.addEventListener('mouseleave', function () {
         extras.forEach(function (n) { n.style.cssText = ''; });
         if (icon) icon.style.transform = 'rotate(0deg)';
       });
@@ -530,7 +536,7 @@
     }
 
     g.set(extras, { y: -8, opacity: 0, pointerEvents: 'none' });
-    if (icon) g.set(icon, { rotation: 0, opacity: 1, y: 0, pointerEvents: 'auto', transformOrigin: '50% 50%' });
+    if (icon) g.set(icon, { rotation: 0, transformOrigin: '50% 50%' });
     var open = false;
     function go(v) {
       if (v === open) return;
@@ -548,8 +554,8 @@
         });
       }
     }
-    list.addEventListener('mouseenter', function () { go(true); });
-    list.addEventListener('mouseleave', function () { go(false); });
+    hoverEl.addEventListener('mouseenter', function () { go(true); });
+    hoverEl.addEventListener('mouseleave', function () { go(false); });
   }
 
   /* ---------- unified link masks ---------- */
