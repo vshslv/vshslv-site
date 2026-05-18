@@ -504,25 +504,33 @@
     var g = window.gsap;
     var list = document.querySelector('[data-droplist="featured"]');
     if (!list) return;
-    var items = [].slice.call(list.children);
+    var icon = list.querySelector('.droplist-icon');
+    var items = [].slice.call(list.children).filter(function (n) { return n !== icon; });
     if (items.length <= 9) return;
     var extras = items.slice(9);
 
     list.querySelectorAll('.general-link').forEach(wrapMask);
 
     if (!g) {
+      if (icon) {
+        icon.style.transition = 'transform .35s ease';
+        icon.style.transformOrigin = '50% 50%';
+      }
       list.addEventListener('mouseenter', function () {
         extras.forEach(function (n) {
           n.style.cssText = 'opacity:1;transform:none;pointer-events:auto;transition:opacity .35s,transform .35s';
         });
+        if (icon) icon.style.transform = 'rotate(180deg)';
       });
       list.addEventListener('mouseleave', function () {
         extras.forEach(function (n) { n.style.cssText = ''; });
+        if (icon) icon.style.transform = 'rotate(0deg)';
       });
       return;
     }
 
     g.set(extras, { y: -8, opacity: 0, pointerEvents: 'none' });
+    if (icon) g.set(icon, { rotation: 0, opacity: 1, y: 0, pointerEvents: 'auto', transformOrigin: '50% 50%' });
     var open = false;
     function go(v) {
       if (v === open) return;
@@ -531,6 +539,14 @@
         ? { y: 0,  opacity: 1, pointerEvents: 'auto', duration: .45, ease: 'power3.out', stagger: .05, overwrite: true }
         : { y: -8, opacity: 0, pointerEvents: 'none', duration: .35, ease: 'power3.in',  stagger: { each: .04, from: 'end' }, overwrite: true }
       );
+      if (icon) {
+        g.to(icon, {
+          rotation: v ? 180 : 0,
+          duration: v ? .45 : .35,
+          ease: v ? 'power3.out' : 'power3.in',
+          overwrite: true
+        });
+      }
     }
     list.addEventListener('mouseenter', function () { go(true); });
     list.addEventListener('mouseleave', function () { go(false); });
