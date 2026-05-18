@@ -11,7 +11,7 @@ about/       → About page only
 portfolio/   → Portfolio page only
 ```
 
-`vshslv-stories` is a separate repo for the Stories feature (loaded only on Home).
+Stories assets (`home/stories.css` + `home/stories.js`) live here too and are loaded only on Home.
 
 ## Webflow setup
 
@@ -32,13 +32,13 @@ portfolio/   → Portfolio page only
 **Inside `<head>` tag:**
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/vshslv/vshslv-site@main/home/home.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/vshslv/vshslv-stories@main/stories.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/vshslv/vshslv-site@main/home/stories.css">
 ```
 
 **Before `</body>` tag:**
 ```html
 <script src="https://cdn.jsdelivr.net/gh/vshslv/vshslv-site@main/home/home.js" defer></script>
-<script src="https://cdn.jsdelivr.net/gh/vshslv/vshslv-stories@main/stories.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/vshslv/vshslv-site@main/home/stories.js" defer></script>
 ```
 
 ### About Page Settings → Custom Code
@@ -88,6 +88,6 @@ Each JS file wraps its logic in an IIFE and exposes a single global object:
 - `window.VshAbout`
 - `window.VshPortfolio`
 
-Stories lives at `window.VshStories` (separate repo).
+Stories lives at `window.VshStories`.
 
 This keeps everything collision-free.
