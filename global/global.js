@@ -96,7 +96,7 @@
     progressOverlay.style.cssText =
       'position:fixed;left:50%;bottom:0.625rem;' +
       'transform:translateX(-50%) scaleY(0);transform-origin:top center;' +
-      'width:0.0625rem;height:22.5svh;background:#000000;z-index:49;' +
+      'width:0.0625rem;height:22.5vh;background:#000000;z-index:49;' +
       'pointer-events:none;opacity:0;transition:opacity 0.2s ease;' +
       'will-change:transform,opacity;';
     document.body.appendChild(progressOverlay);
@@ -124,7 +124,7 @@
     inertiaBar.setAttribute('aria-hidden', 'true');
     inertiaBar.style.cssText =
       'position:fixed;left:50%;bottom:0.625rem;' +
-      'width:0.0625rem;height:22.5svh;background:#000000;z-index:51;' +
+      'width:0.0625rem;height:22.5vh;background:#000000;z-index:51;' +
       'pointer-events:none;will-change:transform,opacity;';
     document.body.appendChild(inertiaBar);
 
