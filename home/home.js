@@ -40,6 +40,20 @@
            (navigator.msMaxTouchPoints > 0);
   };
 
+  // -------- SCROLL OFFSET --------
+  // Body is locked on home (home.css) so window.scrollY stays 0.
+  // Real scroll lives on .page-wrapper / .main-wrapper. Image-trail needs
+  // page-space coords, so fall back to whichever wrapper actually scrolls.
+  const getScrollOffset = () => {
+    const wrapper =
+      document.querySelector('.page-wrapper') ||
+      document.querySelector('body > .main-wrapper');
+    return {
+      x: (wrapper && wrapper.scrollLeft) || window.scrollX || 0,
+      y: (wrapper && wrapper.scrollTop)  || window.scrollY || 0,
+    };
+  };
+
   // -------- LOADER --------
   let customEase = "M0,0,C0,0,0.13,0.34,0.238,0.442,0.305,0.506,0.322,0.514,0.396,0.54,0.478,0.568,0.468,0.56,0.522,0.584,0.572,0.606,0.61,0.719,0.714,0.826,0.798,0.912,1,1,1,1";
   let counter = { value: 0 };
@@ -361,7 +375,8 @@
     handleTouchStart(e) {
       if (!this.imageTrail || this.isHidingImages || this.animationPaused || this.isToggling) return;
       const touch = e.touches[0];
-      const [x, y] = [touch.clientX + window.scrollX, touch.clientY + window.scrollY];
+      const off = getScrollOffset();
+      const [x, y] = [touch.clientX + off.x, touch.clientY + off.y];
       this.mousePos = { x, y };
       if (!this.heroHidden) {
         this.hideHeroContent();
@@ -372,7 +387,8 @@
       if (!this.imageTrail || this.isHidingImages || this.animationPaused || this.isToggling) return;
       e.preventDefault();
       const touch = e.touches[0];
-      const [x, y] = [touch.clientX + window.scrollX, touch.clientY + window.scrollY];
+      const off = getScrollOffset();
+      const [x, y] = [touch.clientX + off.x, touch.clientY + off.y];
       this.mousePos = { x, y };
       this.processMovement(x, y);
     }
@@ -389,7 +405,8 @@
 
     handleMouseMove(e) {
       if (!this.imageTrail || this.isHidingImages || this.animationPaused || this.isToggling) return;
-      const [x, y] = [e.clientX + window.scrollX, e.clientY + window.scrollY];
+      const off = getScrollOffset();
+      const [x, y] = [e.clientX + off.x, e.clientY + off.y];
       this.mousePos = { x, y };
       this.processMovement(x, y);
     }
