@@ -1347,7 +1347,8 @@
     if (items.length <= 9) return;
     var extras = items.slice(9);
 
-    // Per-link icon fade. Icon is the .link-icon sibling (or a descendant of the sibling).
+    // Per-link icon: fade in + draw the diagonal line, then the arrow head.
+    // Falls back to plain opacity fade if the SVG isn't structured into .arrow-line / .arrow-head.
     list.querySelectorAll('.general-link').forEach(function (link) {
       var iconEl = link.nextElementSibling;
       if (iconEl && !iconEl.classList.contains('link-icon')) {
@@ -1355,13 +1356,38 @@
       }
       if (!iconEl) return;
 
+      var line = iconEl.querySelector('.arrow-line');
+      var head = iconEl.querySelector('.arrow-head');
+      var hasStroke = !!(line && head && g && typeof line.getTotalLength === 'function');
+
+      if (hasStroke) {
+        [line, head].forEach(function (p) {
+          var len = p.getTotalLength();
+          p.style.strokeDasharray = len;
+          p.style.strokeDashoffset = len;
+        });
+      }
+
       link.addEventListener('mouseenter', function () {
-        if (g) g.to(iconEl, { opacity: 0.5, duration: 0.3, ease: 'power2.out', overwrite: true });
-        else iconEl.style.opacity = '0.5';
+        if (!g) { iconEl.style.opacity = '0.5'; return; }
+        g.killTweensOf(iconEl);
+        if (hasStroke) {
+          g.killTweensOf([line, head]);
+          g.set(line, { strokeDashoffset: line.getTotalLength() });
+          g.set(head, { strokeDashoffset: head.getTotalLength() });
+          g.timeline()
+            .to(iconEl, { opacity: 0.5, duration: 0.12, ease: 'power2.out' }, 0)
+            .to(line,   { strokeDashoffset: 0, duration: 0.18, ease: 'none' }, 0.04)
+            .to(head,   { strokeDashoffset: 0, duration: 0.10, ease: 'none' }, '>');
+        } else {
+          g.to(iconEl, { opacity: 0.5, duration: 0.2, ease: 'power2.out' });
+        }
       });
       link.addEventListener('mouseleave', function () {
-        if (g) g.to(iconEl, { opacity: 0, duration: 0.2, ease: 'power2.in', overwrite: true });
-        else iconEl.style.opacity = '';
+        if (!g) { iconEl.style.opacity = ''; return; }
+        g.killTweensOf(iconEl);
+        if (hasStroke) g.killTweensOf([line, head]);
+        g.to(iconEl, { opacity: 0, duration: 0.3, ease: 'power2.inOut' });
       });
     });
 

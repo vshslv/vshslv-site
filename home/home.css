@@ -41,6 +41,11 @@
     transform: translate3d(0, -8px, 0);
     pointer-events: none;
   }
+  /* Snappier mask reveal on hover-in; default 0.45s transition applies on hover-out. */
+  [data-droplist="featured"] .general-link:hover .ftd-mt,
+  [data-droplist="featured"] .general-link:hover .ftd-mc {
+    transition-duration: 0.22s;
+  }
 }
 
 /* Home is single-screen — lock body so iOS Safari never collapses its URL bar. */
