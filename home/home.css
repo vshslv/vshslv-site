@@ -68,14 +68,14 @@ html, body {
 .stories-slide .stories-slide_media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .35s ease;z-index:2}
 .stories-slide.is-loaded .stories-slide_media{opacity:1}
 .stories-slide video.stories-slide_media{z-index:3}
-.stories-modal{backdrop-filter:blur(0px)!important;-webkit-backdrop-filter:blur(0px)!important;transition:backdrop-filter .8s linear(0, 0.42 10%, 0.65 20%, 0.77 30%, 0.79 33%, 0.81 39%, 0.85 43%, 0.91 52%, 0.95 62%, 0.98 75%, 1),-webkit-backdrop-filter .8s linear(0, 0.42 10%, 0.65 20%, 0.77 30%, 0.79 33%, 0.81 39%, 0.85 43%, 0.91 52%, 0.95 62%, 0.98 75%, 1)!important}
+.stories-modal{backdrop-filter:blur(0px)!important;-webkit-backdrop-filter:blur(0px)!important;transition:backdrop-filter .95s linear(0, 0.18 7%, 0.36 14%, 0.48 22%, 0.5 28%, 0.5 72%, 0.55 78%, 0.72 86%, 0.9 94%, 1),-webkit-backdrop-filter .95s linear(0, 0.18 7%, 0.36 14%, 0.48 22%, 0.5 28%, 0.5 72%, 0.55 78%, 0.72 86%, 0.9 94%, 1)!important}
 .stories-modal.is-open{opacity:1!important;pointer-events:auto!important;backdrop-filter:blur(30px)!important;-webkit-backdrop-filter:blur(30px)!important}
 .stories-modal.is-closing{transition:backdrop-filter .35s cubic-bezier(0.4,0,1,1),-webkit-backdrop-filter .35s cubic-bezier(0.4,0,1,1)!important}
 body.stories-locked{overflow:hidden}
 
 /* Preview radius controlled from Designer (no override here) */
 
-.stories-modal_inner{border-radius:0.625rem!important;overflow:hidden;box-shadow:none!important;transition:transform .8s linear(0, 0.42 10%, 0.65 20%, 0.77 30%, 0.79 33%, 0.81 39%, 0.85 43%, 0.91 52%, 0.95 62%, 0.98 75%, 1);transform-origin:center center;will-change:transform}
+.stories-modal_inner{border-radius:0.625rem!important;overflow:hidden;box-shadow:none!important;transition:transform .95s linear(0, 0.18 7%, 0.36 14%, 0.48 22%, 0.5 28%, 0.5 72%, 0.55 78%, 0.72 86%, 0.9 94%, 1);transform-origin:center center;will-change:transform}
 .stories-modal.is-closing .stories-modal_inner{transition:transform .35s cubic-bezier(0.4,0,1,1)!important}
 
 .stories-slide_caption{margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;bottom:0.625rem!important;font-family:inherit!important;font-size:0.7rem!important;font-weight:inherit!important;letter-spacing:inherit!important;text-shadow:none!important}
