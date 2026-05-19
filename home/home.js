@@ -803,6 +803,9 @@
   window.VshStories = { ready:false };
 
   var NS = 'vsh_stories_seen_v1';
+  var DISMISSED_NS = 'vsh_stories_dismissed_v1';
+  var POOF_DELAY_MS = 1500;
+  var POOF_DURATION_MS = 700; // matches the CSS animation window (vshPoofVanish + cloud)
   var IMAGE_DURATION = 5;
 
   function $(s,r){return (r||document).querySelector(s);}
@@ -810,6 +813,41 @@
   function getSeen(){try{return JSON.parse(localStorage.getItem(NS)||'[]');}catch(e){return [];}}
   function setSeen(a){try{localStorage.setItem(NS,JSON.stringify(a));}catch(e){}}
   function markSeen(id){if(!id)return;var s=getSeen();if(s.indexOf(id)===-1){s.push(id);setSeen(s);}}
+  function getDismissed(){try{return JSON.parse(sessionStorage.getItem(DISMISSED_NS)||'[]');}catch(e){return [];}}
+  function setDismissed(a){try{sessionStorage.setItem(DISMISSED_NS,JSON.stringify(a));}catch(e){}}
+  function previewId(p){
+    if(!p) return '';
+    return p.getAttribute('data-stories-preview-id')
+        || p.getAttribute('data-stories-id')
+        || (p.querySelector('img,video')||{}).src
+        || (p.textContent||'').trim();
+  }
+  function markDismissed(p){
+    var id = previewId(p);
+    if(!id) return;
+    var d = getDismissed();
+    if(d.indexOf(id) === -1){ d.push(id); setDismissed(d); }
+  }
+  function applyDismissedState(previews){
+    var d = getDismissed();
+    if(!d.length) return;
+    previews.forEach(function(p){
+      if(d.indexOf(previewId(p)) !== -1) p.classList.add('is-dismissed');
+    });
+  }
+  function schedulePoof(trigger){
+    if(!trigger || trigger.dataset.poofScheduled === '1') return;
+    trigger.dataset.poofScheduled = '1';
+    setTimeout(function(){
+      trigger.classList.add('is-poofing');
+      setTimeout(function(){
+        markDismissed(trigger);
+        trigger.classList.remove('is-poofing');
+        trigger.classList.add('is-dismissed');
+        delete trigger.dataset.poofScheduled;
+      }, POOF_DURATION_MS);
+    }, POOF_DELAY_MS);
+  }
   function slideId(s,i){return s.getAttribute('data-stories-id')||('idx-'+i);}
   function resolveImage(slide){
     var a=(slide.getAttribute('data-stories-image')||'').trim();
@@ -999,8 +1037,7 @@
         var fired = false;
         var finalize = function(){
           if (fired) return; fired = true;
-          // One-frame snap: hide modal, reset inner transform.
-          // Keep the trigger invisible + unclickable — this story is dismissed for the session.
+          // One-frame snap: hide modal, reset inner transform, restore preview.
           modal.classList.remove('is-open');
           modal.classList.remove('is-closing');
           modal.setAttribute('aria-hidden','true');
@@ -1014,12 +1051,11 @@
           }
           modal.style.backdropFilter = '';
           modal.style.webkitBackdropFilter = '';
-          if (trigger){
-            trigger.style.pointerEvents = 'none';
-            trigger.setAttribute('aria-hidden','true');
-            // opacity:0 was set on open — leave it set so the preview stays invisible.
-          }
+          if (trigger) trigger.style.opacity = '';
           updatePreview(slides);
+          // After ~1.5s the preview puffs away (Mac-style poof) and stays dismissed for the session.
+          if (trigger) schedulePoof(trigger);
+          if(lastTrigger){try{lastTrigger.focus();}catch(e){}}
         };
         var onEnd = function(ev){
           if (ev && ev.propertyName && ev.propertyName.indexOf('transform') === -1) return;
@@ -1027,7 +1063,7 @@
           finalize();
         };
         inner.addEventListener('transitionend', onEnd);
-        setTimeout(finalize, 540); // safety net (> 420ms close)
+        setTimeout(finalize, 450); // safety net (> 350ms close)
       } else {
         // No FLIP source — fall back to instant close
         modal.classList.remove('is-open');
@@ -1125,7 +1161,9 @@
       }
     }
 
-    $$('.stories-preview, [data-stories-trigger]').forEach(function(p){
+    var previews = $$('.stories-preview, [data-stories-trigger]');
+    applyDismissedState(previews);
+    previews.forEach(function(p){
       p.addEventListener('click',function(e){e.preventDefault();lastTrigger=p;openModal();});
       p.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();lastTrigger=p;openModal();}});
     });
