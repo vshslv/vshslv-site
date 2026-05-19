@@ -958,19 +958,29 @@
     function openModal(){
       if(!slides.length){console.warn('[VshStories] no slides');return;}
       var trigger = lastTrigger || document.querySelector('.stories-preview');
-      if (trigger) trigger.style.opacity = '0';
-      modal.classList.remove('is-closing');
       modal.classList.add('is-open');
       modal.setAttribute('aria-hidden','false');
       document.body.classList.add('stories-locked');
       if (barsEl) barsEl.classList.add('is-active');
       activeIdx=(swiper && swiper.activeIndex) || 0;
       paused=false;
+      // FLIP: start from preview position/size, animate to natural
+      var rect = flipRect(trigger);
+      if (rect && inner){
+        if (trigger) trigger.style.opacity = '0';
+        inner.style.transition = 'none';
+        inner.style.transform = 'translate('+rect.dx+'px,'+rect.dy+'px) scale('+rect.sx+','+rect.sy+')';
+        void inner.offsetWidth;
+        inner.style.transition = '';
+        inner.style.transform = '';
+      }
       startBar(activeIdx);
     }
     function closeModal(seenFully){
       var trigger = lastTrigger || document.querySelector('.stories-preview');
+      var rect = flipRect(trigger);
       clearTimer();
+      // Block pointer events immediately, but keep visual state (.is-open)
       modal.style.pointerEvents = 'none';
       slides.forEach(function(s){
         var v=s.querySelector('video.stories-slide_media');
@@ -979,28 +989,51 @@
       });
       if(seenFully) slides.forEach(function(s,i){markSeen(slideId(s,i));});
       if (barsEl) barsEl.classList.remove('is-active');
-      modal.classList.add('is-closing');
-      modal.classList.remove('is-open');
-      modal.setAttribute('aria-hidden','true');
-      var fired = false;
-      var finalize = function(){
-        if (fired) return; fired = true;
-        modal.classList.remove('is-closing');
-        document.body.classList.remove('stories-locked');
-        modal.style.pointerEvents = '';
-        if (trigger) trigger.style.opacity = '';
-        updatePreview(slides);
-        if(lastTrigger){try{lastTrigger.focus();}catch(e){}}
-      };
-      if (inner){
+      if (rect && inner){
+        // Switch easings to fast (close)
+        modal.classList.add('is-closing');
+        inner.style.transition = '';
+        inner.style.transform = 'translate('+rect.dx+'px,'+rect.dy+'px) scale('+rect.sx+','+rect.sy+')';
+        modal.style.backdropFilter = 'blur(0px)';
+        modal.style.webkitBackdropFilter = 'blur(0px)';
+        var fired = false;
+        var finalize = function(){
+          if (fired) return; fired = true;
+          // One-frame snap: hide modal, reset inner transform, restore preview
+          modal.classList.remove('is-open');
+          modal.classList.remove('is-closing');
+          modal.setAttribute('aria-hidden','true');
+          document.body.classList.remove('stories-locked');
+          modal.style.pointerEvents = '';
+          if (inner){
+            inner.style.transition = 'none';
+            inner.style.transform = '';
+            void inner.offsetWidth;
+            inner.style.transition = '';
+          }
+          modal.style.backdropFilter = '';
+          modal.style.webkitBackdropFilter = '';
+          if (trigger) trigger.style.opacity = '';
+          updatePreview(slides);
+          if(lastTrigger){try{lastTrigger.focus();}catch(e){}}
+        };
         var onEnd = function(ev){
           if (ev && ev.propertyName && ev.propertyName.indexOf('transform') === -1) return;
           inner.removeEventListener('transitionend', onEnd);
           finalize();
         };
         inner.addEventListener('transitionend', onEnd);
+        setTimeout(finalize, 450); // safety net (> 350ms close)
+      } else {
+        // No FLIP source — fall back to instant close
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden','true');
+        document.body.classList.remove('stories-locked');
+        modal.style.pointerEvents = '';
+        if (trigger) trigger.style.opacity = '';
+        updatePreview(slides);
+        if(lastTrigger){try{lastTrigger.focus();}catch(e){}}
       }
-      setTimeout(finalize, 500); // safety net
     }
     function detachBarSync(v){
       if (v && v._barSync){

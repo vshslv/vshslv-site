@@ -75,9 +75,8 @@ body.stories-locked{overflow:hidden}
 
 /* Preview radius controlled from Designer (no override here) */
 
-.stories-modal_inner{border-radius:0.625rem!important;overflow:hidden;box-shadow:none!important;transform:scale(0.94);transition:transform .6s cubic-bezier(0.16,1,0.3,1);transform-origin:center center;will-change:transform}
-.stories-modal.is-open .stories-modal_inner{transform:scale(1)}
-.stories-modal.is-closing .stories-modal_inner{transition:transform .38s cubic-bezier(0.4,0,1,1)!important}
+.stories-modal_inner{border-radius:0.625rem!important;overflow:hidden;box-shadow:none!important;transition:transform .8s cubic-bezier(0,0,0.2,1);transform-origin:center center;will-change:transform}
+.stories-modal.is-closing .stories-modal_inner{transition:transform .35s cubic-bezier(0.4,0,1,1)!important}
 
 .stories-slide_caption{margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;bottom:0.625rem!important;font-family:inherit!important;font-size:0.7rem!important;font-weight:inherit!important;letter-spacing:inherit!important;text-shadow:none!important}
 .stories-slide_caption:empty{display:none}
