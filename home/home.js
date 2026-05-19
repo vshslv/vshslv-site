@@ -999,7 +999,8 @@
         var fired = false;
         var finalize = function(){
           if (fired) return; fired = true;
-          // One-frame snap: hide modal, reset inner transform, restore preview
+          // One-frame snap: hide modal, reset inner transform.
+          // Keep the trigger invisible + unclickable — this story is dismissed for the session.
           modal.classList.remove('is-open');
           modal.classList.remove('is-closing');
           modal.setAttribute('aria-hidden','true');
@@ -1013,9 +1014,12 @@
           }
           modal.style.backdropFilter = '';
           modal.style.webkitBackdropFilter = '';
-          if (trigger) trigger.style.opacity = '';
+          if (trigger){
+            trigger.style.pointerEvents = 'none';
+            trigger.setAttribute('aria-hidden','true');
+            // opacity:0 was set on open — leave it set so the preview stays invisible.
+          }
           updatePreview(slides);
-          if(lastTrigger){try{lastTrigger.focus();}catch(e){}}
         };
         var onEnd = function(ev){
           if (ev && ev.propertyName && ev.propertyName.indexOf('transform') === -1) return;
@@ -1023,7 +1027,7 @@
           finalize();
         };
         inner.addEventListener('transitionend', onEnd);
-        setTimeout(finalize, 450); // safety net (> 350ms close)
+        setTimeout(finalize, 540); // safety net (> 420ms close)
       } else {
         // No FLIP source — fall back to instant close
         modal.classList.remove('is-open');
