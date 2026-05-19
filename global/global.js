@@ -393,7 +393,7 @@
 })();
 
 /* ============================================
-   COPY EMAIL + DROPLIST + UNIFIED LINK MASKS
+   COPY EMAIL + UNIFIED LINK MASKS
    ============================================ */
 (function () {
   'use strict';
@@ -420,7 +420,6 @@
     + '.ftd-mc{position:absolute;left:0;top:0;transform:translateY(110%)}'
     + '@media ' + HOVER + '{'
     +   buildHoverRules()
-    +   ',[data-droplist="featured"]>*:nth-child(n+10){opacity:0;transform:translate3d(0,-8px,0);pointer-events:none}'
     + '}';
   var styleEl = document.createElement('style');
   styleEl.textContent = css;
@@ -498,84 +497,6 @@
     });
   }
 
-  /* ---------- droplist featured ---------- */
-  function setupDroplist() {
-    if (!matchMedia(HOVER).matches) return;
-    var g = window.gsap;
-    var list = document.querySelector('[data-droplist="featured"]');
-    if (!list) return;
-
-    // Icon lives outside the list — sibling under .list-wrapper. Fall back to inside-list (legacy) too.
-    var wrap = list.parentElement || list;
-    var icon = wrap.querySelector('.dropdown-arrow-icon') || list.querySelector('.droplist-icon');
-    // Hover on the whole wrapper so cursor over label/arrow also opens the list.
-    var hoverEl = (icon && !list.contains(icon)) ? wrap : list;
-
-    var items = [].slice.call(list.children).filter(function (n) { return n !== icon; });
-    if (items.length <= 9) return;
-    var extras = items.slice(9);
-
-    list.querySelectorAll('.general-link').forEach(function (link) {
-      wrapMask(link);
-
-      // Fade the .link-icon sibling on hover. Lives next to each link in the list.
-      var iconEl = link.nextElementSibling;
-      if (iconEl && !iconEl.classList.contains('link-icon')) {
-        iconEl = iconEl.querySelector ? iconEl.querySelector('.link-icon') : null;
-      }
-      if (!iconEl) return;
-
-      link.addEventListener('mouseenter', function () {
-        if (g) g.to(iconEl, { opacity: 0.5, duration: 0.3, ease: 'power2.out', overwrite: true });
-        else iconEl.style.opacity = '0.5';
-      });
-      link.addEventListener('mouseleave', function () {
-        if (g) g.to(iconEl, { opacity: 0, duration: 0.2, ease: 'power2.in', overwrite: true });
-        else iconEl.style.opacity = '';
-      });
-    });
-
-    if (!g) {
-      if (icon) {
-        icon.style.transition = 'transform .35s ease';
-        icon.style.transformOrigin = '50% 50%';
-      }
-      hoverEl.addEventListener('mouseenter', function () {
-        extras.forEach(function (n) {
-          n.style.cssText = 'opacity:1;transform:none;pointer-events:auto;transition:opacity .35s,transform .35s';
-        });
-        if (icon) icon.style.transform = 'rotate(180deg)';
-      });
-      hoverEl.addEventListener('mouseleave', function () {
-        extras.forEach(function (n) { n.style.cssText = ''; });
-        if (icon) icon.style.transform = 'rotate(0deg)';
-      });
-      return;
-    }
-
-    g.set(extras, { y: -8, opacity: 0, pointerEvents: 'none' });
-    if (icon) g.set(icon, { rotation: 0, transformOrigin: '50% 50%' });
-    var open = false;
-    function go(v) {
-      if (v === open) return;
-      open = v;
-      g.to(extras, v
-        ? { y: 0,  opacity: 1, pointerEvents: 'auto', duration: .45, ease: 'power3.out', stagger: .05, overwrite: true }
-        : { y: -8, opacity: 0, pointerEvents: 'none', duration: .35, ease: 'power3.in',  stagger: { each: .04, from: 'end' }, overwrite: true }
-      );
-      if (icon) {
-        g.to(icon, {
-          rotation: v ? 180 : 0,
-          duration: v ? .45 : .35,
-          ease: v ? 'power3.out' : 'power3.in',
-          overwrite: true
-        });
-      }
-    }
-    hoverEl.addEventListener('mouseenter', function () { go(true); });
-    hoverEl.addEventListener('mouseleave', function () { go(false); });
-  }
-
   /* ---------- unified link masks ---------- */
   function setupGeneralMasks() {
     document.querySelectorAll(MASK_SELECTOR).forEach(wrapMask);
@@ -588,7 +509,6 @@
       document.querySelectorAll('.copy-button').forEach(syncCopyColor);
     }, 300);
     setupGeneralMasks();
-    setupDroplist();
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

@@ -1319,3 +1319,96 @@
 
   loadSwiper(init);
 })();
+
+/* ============================================
+   FEATURED DROPLIST
+   Reveals items 10+ on wrapper hover, rotates the heading arrow 180°,
+   and fades the .link-icon next to each general-link on per-link hover.
+   .general-link text mask wrapping is handled by global/global.js's
+   setupGeneralMasks(), so this module doesn't need wrapMask().
+   ============================================ */
+(function () {
+  'use strict';
+
+  if (!matchMedia('(hover: hover)').matches) return;
+
+  function setupDroplist() {
+    var g = window.gsap;
+    var list = document.querySelector('[data-droplist="featured"]');
+    if (!list) return;
+
+    // Icon lives outside the list — sibling under .list-wrapper. Fall back to inside-list (legacy) too.
+    var wrap = list.parentElement || list;
+    var icon = wrap.querySelector('.dropdown-arrow-icon') || list.querySelector('.droplist-icon');
+    // Hover on the whole wrapper so cursor over label/arrow also opens the list.
+    var hoverEl = (icon && !list.contains(icon)) ? wrap : list;
+
+    var items = [].slice.call(list.children).filter(function (n) { return n !== icon; });
+    if (items.length <= 9) return;
+    var extras = items.slice(9);
+
+    // Per-link icon fade. Icon is the .link-icon sibling (or a descendant of the sibling).
+    list.querySelectorAll('.general-link').forEach(function (link) {
+      var iconEl = link.nextElementSibling;
+      if (iconEl && !iconEl.classList.contains('link-icon')) {
+        iconEl = iconEl.querySelector ? iconEl.querySelector('.link-icon') : null;
+      }
+      if (!iconEl) return;
+
+      link.addEventListener('mouseenter', function () {
+        if (g) g.to(iconEl, { opacity: 0.5, duration: 0.3, ease: 'power2.out', overwrite: true });
+        else iconEl.style.opacity = '0.5';
+      });
+      link.addEventListener('mouseleave', function () {
+        if (g) g.to(iconEl, { opacity: 0, duration: 0.2, ease: 'power2.in', overwrite: true });
+        else iconEl.style.opacity = '';
+      });
+    });
+
+    if (!g) {
+      if (icon) {
+        icon.style.transition = 'transform .35s ease';
+        icon.style.transformOrigin = '50% 50%';
+      }
+      hoverEl.addEventListener('mouseenter', function () {
+        extras.forEach(function (n) {
+          n.style.cssText = 'opacity:1;transform:none;pointer-events:auto;transition:opacity .35s,transform .35s';
+        });
+        if (icon) icon.style.transform = 'rotate(180deg)';
+      });
+      hoverEl.addEventListener('mouseleave', function () {
+        extras.forEach(function (n) { n.style.cssText = ''; });
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      });
+      return;
+    }
+
+    g.set(extras, { y: -8, opacity: 0, pointerEvents: 'none' });
+    if (icon) g.set(icon, { rotation: 0, transformOrigin: '50% 50%' });
+    var open = false;
+    function go(v) {
+      if (v === open) return;
+      open = v;
+      g.to(extras, v
+        ? { y: 0,  opacity: 1, pointerEvents: 'auto', duration: .45, ease: 'power3.out', stagger: .05, overwrite: true }
+        : { y: -8, opacity: 0, pointerEvents: 'none', duration: .35, ease: 'power3.in',  stagger: { each: .04, from: 'end' }, overwrite: true }
+      );
+      if (icon) {
+        g.to(icon, {
+          rotation: v ? 180 : 0,
+          duration: v ? .45 : .35,
+          ease: v ? 'power3.out' : 'power3.in',
+          overwrite: true
+        });
+      }
+    }
+    hoverEl.addEventListener('mouseenter', function () { go(true); });
+    hoverEl.addEventListener('mouseleave', function () { go(false); });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupDroplist);
+  } else {
+    setupDroplist();
+  }
+})();
