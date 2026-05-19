@@ -115,7 +115,7 @@ body.stories-locked{overflow:hidden}
   z-index: 2;
 }
 .stories-preview.is-dismissed { display: none !important; }
-.stories-preview.is-poofed { filter: grayscale(1); -webkit-filter: grayscale(1); }
+.stories-preview.is-poofed { filter: grayscale(0.6); -webkit-filter: grayscale(0.6); opacity: 0.7; }
 
 .stories-slide_caption{margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;bottom:0.625rem!important;font-family:inherit!important;font-size:0.7rem!important;font-weight:inherit!important;letter-spacing:inherit!important;text-shadow:none!important}
 .stories-slide_caption:empty{display:none}
