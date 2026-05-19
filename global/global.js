@@ -515,7 +515,25 @@
     if (items.length <= 9) return;
     var extras = items.slice(9);
 
-    list.querySelectorAll('.general-link').forEach(wrapMask);
+    list.querySelectorAll('.general-link').forEach(function (link) {
+      wrapMask(link);
+
+      // Fade the .link-icon sibling on hover. Lives next to each link in the list.
+      var iconEl = link.nextElementSibling;
+      if (iconEl && !iconEl.classList.contains('link-icon')) {
+        iconEl = iconEl.querySelector ? iconEl.querySelector('.link-icon') : null;
+      }
+      if (!iconEl) return;
+
+      link.addEventListener('mouseenter', function () {
+        if (g) g.to(iconEl, { opacity: 0.5, duration: 0.3, ease: 'power2.out', overwrite: true });
+        else iconEl.style.opacity = '0.5';
+      });
+      link.addEventListener('mouseleave', function () {
+        if (g) g.to(iconEl, { opacity: 0, duration: 0.2, ease: 'power2.in', overwrite: true });
+        else iconEl.style.opacity = '';
+      });
+    });
 
     if (!g) {
       if (icon) {
