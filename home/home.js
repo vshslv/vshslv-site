@@ -1386,8 +1386,16 @@
       link.addEventListener('mouseleave', function () {
         if (!g) { iconEl.style.opacity = ''; return; }
         g.killTweensOf(iconEl);
-        if (hasStroke) g.killTweensOf([line, head]);
-        g.to(iconEl, { opacity: 0, duration: 0.3, ease: 'power2.inOut' });
+        if (hasStroke) {
+          g.killTweensOf([line, head]);
+          // Mirror the hover-in: un-draw head, then un-draw line, then fade opacity.
+          g.timeline()
+            .to(head,   { strokeDashoffset: head.getTotalLength(), duration: 0.10, ease: 'none' }, 0)
+            .to(line,   { strokeDashoffset: line.getTotalLength(), duration: 0.18, ease: 'none' }, '>')
+            .to(iconEl, { opacity: 0, duration: 0.12, ease: 'power2.in' }, '>-0.04');
+        } else {
+          g.to(iconEl, { opacity: 0, duration: 0.3, ease: 'power2.inOut' });
+        }
       });
     });
 
