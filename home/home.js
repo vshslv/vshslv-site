@@ -900,10 +900,49 @@
     slide.dataset.injected='1';
   }
 
+  function ensureSlideMeta(slide){
+    var cap = slide.querySelector('.stories-slide_caption');
+    if (!cap) return;
+    var meta = slide.querySelector('.stories-slide_meta');
+    // Wrap caption in a meta container so date/status can sit above/below it.
+    if (!meta){
+      meta = document.createElement('div');
+      meta.className = 'stories-slide_meta';
+      cap.parentNode.insertBefore(meta, cap);
+      meta.appendChild(cap);
+    } else if (cap.parentNode !== meta){
+      meta.appendChild(cap);
+    }
+
+    var dateText = (slide.getAttribute('data-stories-date')||'').trim();
+    var dateEl = meta.querySelector('.stories-slide_date');
+    if (dateText){
+      if (!dateEl){ dateEl = document.createElement('div'); dateEl.className = 'stories-slide_date'; }
+      if (meta.firstChild !== dateEl) meta.insertBefore(dateEl, meta.firstChild);
+      if (dateEl.textContent !== dateText) dateEl.textContent = dateText;
+    } else if (dateEl){
+      dateEl.remove();
+    }
+
+    var statusText = (slide.getAttribute('data-stories-status')||'').trim();
+    var statusEl = meta.querySelector('.stories-slide_status');
+    if (statusText){
+      if (!statusEl){ statusEl = document.createElement('div'); statusEl.className = 'stories-slide_status'; }
+      if (meta.lastChild !== statusEl) meta.appendChild(statusEl);
+      if (statusEl.textContent !== statusText) statusEl.textContent = statusText;
+    } else if (statusEl){
+      statusEl.remove();
+    }
+  }
+
   function checkCaption(slide){
     var cap=slide.querySelector('.stories-slide_caption');
     if(!cap){slide.classList.remove('has-caption');return;}
-    var has=(cap.textContent||'').trim().length>0;
+    ensureSlideMeta(slide);
+    var capText  = (cap.textContent||'').trim();
+    var dateText = (slide.getAttribute('data-stories-date')||'').trim();
+    var statText = (slide.getAttribute('data-stories-status')||'').trim();
+    var has = !!(capText || dateText || statText);
     slide.classList.toggle('has-caption',has);
   }
 
