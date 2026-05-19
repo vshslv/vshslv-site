@@ -803,7 +803,7 @@
   window.VshStories = { ready:false };
 
   var NS = 'vsh_stories_seen_v1';
-  var DISMISSED_NS = 'vsh_stories_dismissed_v1';
+  var POOFED_NS = 'vsh_stories_poofed_v1';
   var POOF_DELAY_MS = 1500;
   var POOF_DURATION_MS = 700; // matches the CSS animation window (vshPoofVanish + cloud)
   var IMAGE_DURATION = 5;
@@ -813,8 +813,8 @@
   function getSeen(){try{return JSON.parse(localStorage.getItem(NS)||'[]');}catch(e){return [];}}
   function setSeen(a){try{localStorage.setItem(NS,JSON.stringify(a));}catch(e){}}
   function markSeen(id){if(!id)return;var s=getSeen();if(s.indexOf(id)===-1){s.push(id);setSeen(s);}}
-  function getDismissed(){try{return JSON.parse(sessionStorage.getItem(DISMISSED_NS)||'[]');}catch(e){return [];}}
-  function setDismissed(a){try{sessionStorage.setItem(DISMISSED_NS,JSON.stringify(a));}catch(e){}}
+  function getPoofed(){try{return JSON.parse(localStorage.getItem(POOFED_NS)||'[]');}catch(e){return [];}}
+  function setPoofedList(a){try{localStorage.setItem(POOFED_NS,JSON.stringify(a));}catch(e){}}
   function previewId(p){
     if(!p) return '';
     return p.getAttribute('data-stories-preview-id')
@@ -822,17 +822,17 @@
         || (p.querySelector('img,video')||{}).src
         || (p.textContent||'').trim();
   }
-  function markDismissed(p){
+  function markPoofed(p){
     var id = previewId(p);
     if(!id) return;
-    var d = getDismissed();
-    if(d.indexOf(id) === -1){ d.push(id); setDismissed(d); }
+    var d = getPoofed();
+    if(d.indexOf(id) === -1){ d.push(id); setPoofedList(d); }
   }
-  function applyDismissedState(previews){
-    var d = getDismissed();
+  function applyPoofedState(previews){
+    var d = getPoofed();
     if(!d.length) return;
     previews.forEach(function(p){
-      if(d.indexOf(previewId(p)) !== -1) p.classList.add('is-dismissed');
+      if(d.indexOf(previewId(p)) !== -1) p.classList.add('is-poofed');
     });
   }
   function schedulePoof(trigger){
@@ -841,9 +841,10 @@
     setTimeout(function(){
       trigger.classList.add('is-poofing');
       setTimeout(function(){
-        markDismissed(trigger);
+        markPoofed(trigger);
         trigger.classList.remove('is-poofing');
-        trigger.classList.add('is-dismissed');
+        trigger.classList.add('is-poofed');     // grayscale (persists across refresh via localStorage)
+        trigger.classList.add('is-dismissed');  // display:none for the current page view only (in-memory)
         delete trigger.dataset.poofScheduled;
       }, POOF_DURATION_MS);
     }, POOF_DELAY_MS);
@@ -1162,7 +1163,7 @@
     }
 
     var previews = $$('.stories-preview, [data-stories-trigger]');
-    applyDismissedState(previews);
+    applyPoofedState(previews);
     previews.forEach(function(p){
       p.addEventListener('click',function(e){e.preventDefault();lastTrigger=p;openModal();});
       p.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();lastTrigger=p;openModal();}});
