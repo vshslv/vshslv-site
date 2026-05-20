@@ -914,24 +914,36 @@
       meta.appendChild(cap);
     }
 
-    var dateText = (slide.getAttribute('data-stories-date')||'').trim();
-    var dateEl = meta.querySelector('.stories-slide_date');
-    if (dateText){
+    // Date: prefer existing CMS-bound element text, fall back to data-stories-date attribute.
+    var dateAttr = (slide.getAttribute('data-stories-date')||'').trim();
+    var dateEl = slide.querySelector('.stories-slide_date');
+    if (dateAttr){
       if (!dateEl){ dateEl = document.createElement('div'); dateEl.className = 'stories-slide_date'; }
-      if (meta.firstChild !== dateEl) meta.insertBefore(dateEl, meta.firstChild);
-      if (dateEl.textContent !== dateText) dateEl.textContent = dateText;
-    } else if (dateEl){
-      dateEl.remove();
+      if (dateEl.textContent !== dateAttr) dateEl.textContent = dateAttr;
+    }
+    if (dateEl){
+      var hasDateText = (dateEl.textContent||'').trim().length > 0;
+      if (hasDateText){
+        if (dateEl.parentNode !== meta || meta.firstChild !== dateEl) meta.insertBefore(dateEl, meta.firstChild);
+      } else if (!dateAttr){
+        dateEl.remove();
+      }
     }
 
-    var statusText = (slide.getAttribute('data-stories-status')||'').trim();
-    var statusEl = meta.querySelector('.stories-slide_status');
-    if (statusText){
+    // Status: prefer existing CMS-bound element text, fall back to data-stories-status attribute.
+    var statusAttr = (slide.getAttribute('data-stories-status')||'').trim();
+    var statusEl = slide.querySelector('.stories-slide_status');
+    if (statusAttr){
       if (!statusEl){ statusEl = document.createElement('div'); statusEl.className = 'stories-slide_status'; }
-      if (meta.lastChild !== statusEl) meta.appendChild(statusEl);
-      if (statusEl.textContent !== statusText) statusEl.textContent = statusText;
-    } else if (statusEl){
-      statusEl.remove();
+      if (statusEl.textContent !== statusAttr) statusEl.textContent = statusAttr;
+    }
+    if (statusEl){
+      var hasStatusText = (statusEl.textContent||'').trim().length > 0;
+      if (hasStatusText){
+        if (statusEl.parentNode !== meta || meta.lastChild !== statusEl) meta.appendChild(statusEl);
+      } else if (!statusAttr){
+        statusEl.remove();
+      }
     }
   }
 
