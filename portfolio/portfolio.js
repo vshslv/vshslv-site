@@ -149,12 +149,15 @@
     }
 
     // The first .project-images block in DOM order is the first project
-    // (Muse Group). Gate the loader on this whole block — the rest of the
-    // portfolio streams in lazily as the user scrolls.
+    // (Muse Group). Force-load all its images eagerly with high priority,
+    // but gate the loader only on the FIRST image — on slow networks this
+    // gives the loader a realistic chance to close while the rest of the
+    // first project fills in via skeletons over the next second or two.
     const firstProject = document.querySelector('.project-images');
     const firstProjectImages = firstProject
       ? Array.from(firstProject.querySelectorAll('img'))
       : [];
+    const loaderGateImage = firstProjectImages[0] || null;
 
     // Mark every image with a skeleton state up-front so CSS can paint the
     // placeholder immediately (before any image fires `load`).
@@ -163,25 +166,23 @@
     });
 
     // Force the first project's images to load eagerly with high priority
-    // so the loader has something concrete to wait on instead of being
-    // blocked by Webflow's native lazy-loading deferral.
+    // so they don't wait on Webflow's native lazy-loading deferral.
     firstProjectImages.forEach(img => {
       img.loading = 'eager';
       if ('fetchPriority' in img) img.fetchPriority = 'high';
     });
 
-    state.totalImages = firstProjectImages.length;
-
-    if (state.totalImages === 0) {
-      // No images in the first project (unlikely) — close loader now.
+    if (!loaderGateImage) {
+      // No first image to wait on (unlikely) — close loader now.
       endLoaderAnimation(
         document.querySelector('.loader'),
         loaderProgress,
         document.querySelector('.trigger')
       );
     } else {
+      state.totalImages = 1;
       state.counter.value = 0;
-      firstProjectImages.forEach(img => watchImage(img, () => handleImageLoad(loaderProgress)));
+      watchImage(loaderGateImage, () => handleImageLoad(loaderProgress));
 
       // Soft 2s drift from 0 to 70% — visual "we're working" indicator.
       // The remaining 70 → 100% is driven by real load completion in
@@ -193,10 +194,10 @@
       });
     }
 
-    // Remaining images: watch for `load` to drop their skeleton, but
-    // don't block the loader on them.
+    // Remaining images (including other first-project images): watch for
+    // `load` to drop their skeleton, but don't block the loader on them.
     allImages.forEach(img => {
-      if (firstProjectImages.includes(img)) return;
+      if (img === loaderGateImage) return;
       watchImage(img);
     });
 
