@@ -117,6 +117,38 @@
   }
 
   // -------- IMAGE LAZY-LOAD + SKELETON --------
+  // Derive a sensible alt label from a Webflow asset URL, e.g.
+  //   ".../688f74f03032819fa890de64_muse-1.webp" → "Muse 1"
+  // Returns empty string if nothing usable can be parsed.
+  function altFromSrc(src) {
+    try {
+      const url = new URL(src, location.href);
+      const file = url.pathname.split('/').pop() || '';
+      const noExt = file.replace(/\.[a-z0-9]+$/i, '');
+      // Strip leading 24-char hex hash + underscore (Webflow asset prefix).
+      const slug = noExt.replace(/^[a-f0-9]{20,32}_/i, '');
+      if (!slug) return '';
+      const words = slug.replace(/[-_]+/g, ' ').trim();
+      if (!words) return '';
+      return words.charAt(0).toUpperCase() + words.slice(1);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function polishImage(img) {
+    if (img.dataset.vshPolished === '1') return;
+    img.dataset.vshPolished = '1';
+    if (!img.classList.contains('project-image')) {
+      img.classList.add('project-image');
+    }
+    const currentAlt = (img.getAttribute('alt') || '').trim();
+    if (!currentAlt) {
+      const guess = altFromSrc(img.currentSrc || img.src || '');
+      if (guess) img.setAttribute('alt', guess);
+    }
+  }
+
   function markImageLoaded(img) {
     if (img.dataset.loaded === 'true') return;
     img.dataset.loaded = 'true';
@@ -160,8 +192,10 @@
     const loaderGateImage = firstProjectImages[0] || null;
 
     // Mark every image with a skeleton state up-front so CSS can paint the
-    // placeholder immediately (before any image fires `load`).
+    // placeholder immediately (before any image fires `load`). Also tag a
+    // consistent class and back-fill alt text from filename when missing.
     allImages.forEach(img => {
+      polishImage(img);
       img.dataset.loaded = (img.complete && img.naturalWidth !== 0) ? 'true' : 'false';
     });
 
