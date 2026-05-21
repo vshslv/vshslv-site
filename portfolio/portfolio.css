@@ -30,9 +30,36 @@ html.lenis {
   pointer-events: none;
 }
 
-/* Grid item performance hints */
-.grid__item-img,
-.grid__item-img-inner {
-  will-change: transform, opacity;
-  contain: layout paint;
+/* ====================================================
+   SKELETON PLACEHOLDER FOR LAZY-LOADED IMAGES
+   Gray plate with opacity pulse, fades out on load.
+   Relies on width/height attrs Webflow emits so the
+   <img> box reserves correct aspect-ratio (zero CLS).
+   ==================================================== */
+.project-images img {
+  transition: opacity 0.4s ease;
+}
+
+.project-images img[data-loaded="false"] {
+  background-color: rgba(216, 217, 215, 0.9);
+  animation: portfolio-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.project-images img[data-loaded="true"] {
+  background-color: transparent;
+  animation: none;
+}
+
+@keyframes portfolio-skeleton-pulse {
+  0%, 100% { background-color: rgba(216, 217, 215, 0.9); }
+  50%      { background-color: rgba(216, 217, 215, 0.5); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-images img[data-loaded="false"] {
+    animation: none;
+  }
+  .project-images img {
+    transition: none;
+  }
 }

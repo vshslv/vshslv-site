@@ -8,7 +8,13 @@
     customEase: "M0,0,C0,0,0.13,0.34,0.238,0.442,0.305,0.506,0.322,0.514,0.396,0.54,0.478,0.568,0.468,0.56,0.522,0.584,0.572,0.606,0.61,0.719,0.714,0.826,0.798,0.912,1,1,1,1",
     loaderDuration: 10,
     maxLoaderTime: 10000,
-    desktopBreakpoint: 991
+    desktopBreakpoint: 991,
+    // Above-the-fold buffer: images whose top is within this multiple of the
+    // viewport height are forced to load eagerly and gate the loader.
+    atfViewportBuffer: 1.25,
+    // IntersectionObserver pre-fetch margin: how far ahead (in viewport heights)
+    // we promote lazy images to eager. Lenis smooth scroll needs head-room.
+    prefetchRootMargin: "200% 0px"
   };
 
   // -------- STATE --------
@@ -30,6 +36,10 @@
       timeoutId = setTimeout(() => func.apply(this, args), delay);
     };
   };
+
+  const lenisResizeDebounced = debounce(() => {
+    try { state.lenis?.resize(); } catch (e) {}
+  }, 120);
 
   // -------- LOADER FUNCTIONS --------
   function showLoaderAnimation(loader, loaderProgress) {
@@ -55,6 +65,7 @@
   }
 
   function endLoaderAnimation(loader, loaderProgress, trigger) {
+    if (window.loaderFinished) return;
     window.loaderFinished = true;
     trigger?.click();
     state.isLoaderReady = true;
@@ -86,9 +97,10 @@
 
   function handleImageLoad(loaderProgress) {
     state.imagesLoaded++;
-    state.counter.value = Math.min(75 + (state.imagesLoaded / state.totalImages) * 25, 100);
+    const denom = state.totalImages || 1;
+    state.counter.value = Math.min(75 + (state.imagesLoaded / denom) * 25, 100);
 
-    if (state.imagesLoaded === state.totalImages) {
+    if (state.imagesLoaded >= state.totalImages) {
       setTimeout(() => {
         gsap.to(loaderProgress, {
           width: "100%",
@@ -104,39 +116,113 @@
     }
   }
 
-  function setupLoader() {
-    const loader = document.querySelector('.loader');
-    const loaderProgress = document.querySelector('.loader_progress');
-    const trigger = document.querySelector('.trigger');
-    const images = document.querySelectorAll('.project-images img');
+  // -------- IMAGE LAZY-LOAD + SKELETON --------
+  function markImageLoaded(img) {
+    if (img.dataset.loaded === 'true') return;
+    img.dataset.loaded = 'true';
+    lenisResizeDebounced();
+  }
 
-    state.totalImages = images.length;
+  function watchImage(img, onResolve) {
+    if (img.complete && img.naturalWidth !== 0) {
+      markImageLoaded(img);
+      onResolve?.();
+      return;
+    }
+    const handler = () => {
+      markImageLoaded(img);
+      onResolve?.();
+    };
+    img.addEventListener('load',  handler, { once: true });
+    img.addEventListener('error', handler, { once: true });
+  }
 
-    if (state.totalImages === 0) {
-      endLoaderAnimation(loader, loaderProgress, trigger);
+  function setupImages(loaderProgress) {
+    const images = Array.from(document.querySelectorAll('.project-images img'));
+    if (images.length === 0) {
+      endLoaderAnimation(
+        document.querySelector('.loader'),
+        loaderProgress,
+        document.querySelector('.trigger')
+      );
       return;
     }
 
-    state.counter.value = 75;
+    // Mark every image with a skeleton state up-front so CSS can paint the
+    // placeholder immediately (before any image fires `load`).
+    const viewportH = window.innerHeight || document.documentElement.clientHeight;
+    const atfCutoff = viewportH * config.atfViewportBuffer;
+    const atfImages = [];
 
     images.forEach(img => {
-      if (img.complete && img.naturalWidth !== 0) {
-        handleImageLoad(loaderProgress);
-      } else {
-        img.addEventListener('load', () => handleImageLoad(loaderProgress));
-        img.addEventListener('error', () => handleImageLoad(loaderProgress));
+      img.dataset.loaded = (img.complete && img.naturalWidth !== 0) ? 'true' : 'false';
+
+      // Decide which images are "above the fold" and need eager loading.
+      // The rest stay on Webflow's default loading="lazy".
+      const top = img.getBoundingClientRect().top;
+      if (top < atfCutoff) {
+        img.loading = 'eager';
+        if ('fetchPriority' in img) img.fetchPriority = 'high';
+        atfImages.push(img);
       }
     });
 
-    gsap.to(loaderProgress, {
-      width: "75%",
-      duration: 2,
-      ease: CustomEase.create("custom", config.customEase)
+    // Loader counter is gated on ATF images only — the rest stream in
+    // lazily as the user scrolls and never block the loader from closing.
+    state.totalImages = atfImages.length;
+
+    if (state.totalImages === 0) {
+      // Nothing visible above the fold (unlikely) — close loader now.
+      endLoaderAnimation(
+        document.querySelector('.loader'),
+        loaderProgress,
+        document.querySelector('.trigger')
+      );
+    } else {
+      state.counter.value = 75;
+      atfImages.forEach(img => watchImage(img, () => handleImageLoad(loaderProgress)));
+
+      gsap.to(loaderProgress, {
+        width: "75%",
+        duration: 2,
+        ease: CustomEase.create("custom", config.customEase)
+      });
+    }
+
+    // Below-the-fold images: still watch their `load` to remove skeleton,
+    // but don't gate the loader on them.
+    images.forEach(img => {
+      if (atfImages.includes(img)) return;
+      watchImage(img);
     });
 
+    // Promote images to eager a bit before they enter the viewport so the
+    // skeleton has time to swap to the real image during smooth scroll.
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const img = entry.target;
+          if (img.loading !== 'eager') img.loading = 'eager';
+          observer.unobserve(img);
+        });
+      }, { rootMargin: config.prefetchRootMargin });
+
+      images.forEach(img => {
+        if (img.dataset.loaded === 'true') return;
+        if (atfImages.includes(img)) return;
+        io.observe(img);
+      });
+    }
+
+    // Safety net — if anything stalls, still close the loader.
     setTimeout(() => {
       if (!window.loaderFinished) {
-        endLoaderAnimation(loader, loaderProgress, trigger);
+        endLoaderAnimation(
+          document.querySelector('.loader'),
+          loaderProgress,
+          document.querySelector('.trigger')
+        );
       }
     }, config.maxLoaderTime);
   }
@@ -227,7 +313,7 @@
     });
 
     // Initialize components
-    setTimeout(setupLoader, 100);
+    setTimeout(() => setupImages(loaderProgress), 100);
     initLenis();
 
     // Handle window resize for desktop detection
