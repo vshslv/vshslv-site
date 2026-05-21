@@ -32,27 +32,29 @@ html.lenis {
 
 /* ====================================================
    SKELETON PLACEHOLDER FOR LAZY-LOADED IMAGES
-   Gray plate with opacity pulse, fades out on load.
-   Relies on width/height attrs Webflow emits so the
-   <img> box reserves correct aspect-ratio (zero CLS).
+   Identical to .stories-slide_skeleton on the home page:
+   dark horizontal shimmer that pans on background-position.
+   Relies on Webflow's width/height attrs so the <img> box
+   reserves the correct aspect-ratio (zero CLS).
    ==================================================== */
+@keyframes vshStoriesShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .project-images img {
-  transition: opacity 0.4s ease;
+  transition: opacity 0.35s ease;
 }
 
 .project-images img[data-loaded="false"] {
-  background-color: rgba(216, 217, 215, 0.9);
-  animation: portfolio-skeleton-pulse 1.4s ease-in-out infinite;
+  background-image: linear-gradient(110deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+  animation: vshStoriesShimmer 1.4s linear infinite;
 }
 
 .project-images img[data-loaded="true"] {
-  background-color: transparent;
+  background-image: none;
   animation: none;
-}
-
-@keyframes portfolio-skeleton-pulse {
-  0%, 100% { background-color: rgba(216, 217, 215, 0.9); }
-  50%      { background-color: rgba(216, 217, 215, 0.5); }
 }
 
 @media (prefers-reduced-motion: reduce) {
