@@ -141,7 +141,7 @@
 
     function setupLoader() {
       const desktopImages = document.querySelectorAll('.content__img-inner');
-      const mobileImages = document.querySelectorAll('.thumbnail-inner img');
+      const mobileImages = document.querySelectorAll('.thumbnail-inner');
 
       const existingVideo = document.querySelector('video:not(.stories-slide_media):not(.stories-preview_img)');
       const videoElements = existingVideo ? [existingVideo] : [];
@@ -628,7 +628,7 @@
     if (!isMobile()) return;
 
     const items = [...document.querySelectorAll(".thumbnail-mob-item")];
-    const images = [...document.querySelectorAll(".thumbnail-inner img")];
+    const images = [...document.querySelectorAll(".thumbnail-inner")];
     const total = items.length;
     if (total === 0) return;
 

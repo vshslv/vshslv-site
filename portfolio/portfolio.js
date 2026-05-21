@@ -7,11 +7,8 @@
   const config = {
     customEase: "M0,0,C0,0,0.13,0.34,0.238,0.442,0.305,0.506,0.322,0.514,0.396,0.54,0.478,0.568,0.468,0.56,0.522,0.584,0.572,0.606,0.61,0.719,0.714,0.826,0.798,0.912,1,1,1,1",
     loaderDuration: 10,
-    maxLoaderTime: 10000,
+    maxLoaderTime: 15000,
     desktopBreakpoint: 991,
-    // Above-the-fold buffer: images whose top is within this multiple of the
-    // viewport height are forced to load eagerly and gate the loader.
-    atfViewportBuffer: 1.25,
     // IntersectionObserver pre-fetch margin: how far ahead (in viewport heights)
     // we promote lazy images to eager. Lenis smooth scroll needs head-room.
     prefetchRootMargin: "200% 0px"
@@ -98,14 +95,17 @@
   function handleImageLoad(loaderProgress) {
     state.imagesLoaded++;
     const denom = state.totalImages || 1;
-    state.counter.value = Math.min(75 + (state.imagesLoaded / denom) * 25, 100);
+    state.counter.value = Math.min(70 + (state.imagesLoaded / denom) * 30, 100);
 
     if (state.imagesLoaded >= state.totalImages) {
+      // First project finished loading — animate the bar the rest of the way
+      // (overwriting the in-flight 0→70% drift) and close the loader.
       setTimeout(() => {
         gsap.to(loaderProgress, {
           width: "100%",
           duration: 0.5,
           ease: "power2.out",
+          overwrite: "auto",
           onComplete: () => endLoaderAnimation(
             document.querySelector('.loader'),
             loaderProgress,
@@ -138,8 +138,8 @@
   }
 
   function setupImages(loaderProgress) {
-    const images = Array.from(document.querySelectorAll('.project-images img'));
-    if (images.length === 0) {
+    const allImages = Array.from(document.querySelectorAll('.project-images img'));
+    if (allImages.length === 0) {
       endLoaderAnimation(
         document.querySelector('.loader'),
         loaderProgress,
@@ -148,51 +148,55 @@
       return;
     }
 
+    // The first .project-images block in DOM order is the first project
+    // (Muse Group). Gate the loader on this whole block — the rest of the
+    // portfolio streams in lazily as the user scrolls.
+    const firstProject = document.querySelector('.project-images');
+    const firstProjectImages = firstProject
+      ? Array.from(firstProject.querySelectorAll('img'))
+      : [];
+
     // Mark every image with a skeleton state up-front so CSS can paint the
     // placeholder immediately (before any image fires `load`).
-    const viewportH = window.innerHeight || document.documentElement.clientHeight;
-    const atfCutoff = viewportH * config.atfViewportBuffer;
-    const atfImages = [];
-
-    images.forEach(img => {
+    allImages.forEach(img => {
       img.dataset.loaded = (img.complete && img.naturalWidth !== 0) ? 'true' : 'false';
-
-      // Decide which images are "above the fold" and need eager loading.
-      // The rest stay on Webflow's default loading="lazy".
-      const top = img.getBoundingClientRect().top;
-      if (top < atfCutoff) {
-        img.loading = 'eager';
-        if ('fetchPriority' in img) img.fetchPriority = 'high';
-        atfImages.push(img);
-      }
     });
 
-    // Loader counter is gated on ATF images only — the rest stream in
-    // lazily as the user scrolls and never block the loader from closing.
-    state.totalImages = atfImages.length;
+    // Force the first project's images to load eagerly with high priority
+    // so the loader has something concrete to wait on instead of being
+    // blocked by Webflow's native lazy-loading deferral.
+    firstProjectImages.forEach(img => {
+      img.loading = 'eager';
+      if ('fetchPriority' in img) img.fetchPriority = 'high';
+    });
+
+    state.totalImages = firstProjectImages.length;
 
     if (state.totalImages === 0) {
-      // Nothing visible above the fold (unlikely) — close loader now.
+      // No images in the first project (unlikely) — close loader now.
       endLoaderAnimation(
         document.querySelector('.loader'),
         loaderProgress,
         document.querySelector('.trigger')
       );
     } else {
-      state.counter.value = 75;
-      atfImages.forEach(img => watchImage(img, () => handleImageLoad(loaderProgress)));
+      state.counter.value = 0;
+      firstProjectImages.forEach(img => watchImage(img, () => handleImageLoad(loaderProgress)));
 
+      // Soft 2s drift from 0 to 70% — visual "we're working" indicator.
+      // The remaining 70 → 100% is driven by real load completion in
+      // handleImageLoad, which also overwrites this tween if needed.
       gsap.to(loaderProgress, {
-        width: "75%",
+        width: "70%",
         duration: 2,
         ease: CustomEase.create("custom", config.customEase)
       });
     }
 
-    // Below-the-fold images: still watch their `load` to remove skeleton,
-    // but don't gate the loader on them.
-    images.forEach(img => {
-      if (atfImages.includes(img)) return;
+    // Remaining images: watch for `load` to drop their skeleton, but
+    // don't block the loader on them.
+    allImages.forEach(img => {
+      if (firstProjectImages.includes(img)) return;
       watchImage(img);
     });
 
@@ -208,14 +212,15 @@
         });
       }, { rootMargin: config.prefetchRootMargin });
 
-      images.forEach(img => {
+      allImages.forEach(img => {
         if (img.dataset.loaded === 'true') return;
-        if (atfImages.includes(img)) return;
+        if (firstProjectImages.includes(img)) return;
         io.observe(img);
       });
     }
 
-    // Safety net — if anything stalls, still close the loader.
+    // Safety net — if the first project stalls (slow CDN, broken asset),
+    // still close the loader after a hard cap so users aren't stuck.
     setTimeout(() => {
       if (!window.loaderFinished) {
         endLoaderAnimation(
