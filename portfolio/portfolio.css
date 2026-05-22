@@ -74,16 +74,23 @@ html.lenis {
    layouts. State lives on <body data-grid="default|2|4">.
    ==================================================== */
 
-/* 2-col and 4-col modes — only above 991px (desktop) */
+/* 2-col and 4-col modes — only above 991px (desktop).
+   Column template + gap mirror .nav-links-wrp-desktop so the
+   image grid lines up with the site's existing vertical rhythm.
+   The page-wrapper's inline padding (0.315rem L / 0.63rem R)
+   is mirrored here so the OUTER edges of the image grid align
+   with the nav's outer edges too. */
 @media (min-width: 62em) {
   body[data-grid="2"] .project-images,
   body[data-grid="4"] .project-images {
     display: grid;
-    gap: 0.25rem;
+    gap: 0.63rem;                          /* = .nav-links-wrp-desktop gap */
+    padding-inline-start: 0.315rem;        /* = .navigation-top padding-left */
+    padding-inline-end:   0.63rem;         /* = .navigation-top padding-right */
     align-items: start;
   }
-  body[data-grid="2"] .project-images { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  body[data-grid="4"] .project-images { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  body[data-grid="2"] .project-images { grid-template-columns: 1.25fr 1.25fr; }
+  body[data-grid="4"] .project-images { grid-template-columns: repeat(4, 1.25fr); }
 
   /* Each <img> fills its grid cell. height:auto preserves aspect ratio. */
   body[data-grid="2"] .project-images > img,
