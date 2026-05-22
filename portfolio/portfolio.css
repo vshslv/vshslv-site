@@ -74,23 +74,20 @@ html.lenis {
    layouts. State lives on <body data-grid="default|2|4">.
    ==================================================== */
 
-/* 2-col and 4-col modes — only above 991px (desktop).
+/* 2-col mode — only above 991px (desktop).
    Pinterest-style masonry via CSS columns: images flow top-to-bottom
    per column in source order, packed tight (gap 0, no inline padding,
    no break inside an image). We deliberately avoid `display: grid` so
    the Webflow w-node grid-area placements stay inert — no specificity
    fight, no !important needed. */
 @media (min-width: 62em) {
-  body[data-grid="2"] .project-images,
-  body[data-grid="4"] .project-images {
+  body[data-grid="2"] .project-images {
+    column-count: 2;
     column-gap: 0;
     padding-inline: 0;
   }
-  body[data-grid="2"] .project-images { column-count: 2; }
-  body[data-grid="4"] .project-images { column-count: 4; }
 
-  body[data-grid="2"] .project-images > img,
-  body[data-grid="4"] .project-images > img {
+  body[data-grid="2"] .project-images > img {
     display: block;
     inline-size: 100%;
     block-size: auto;
@@ -102,21 +99,17 @@ html.lenis {
 }
 
 /* ====================================================
-   VIEW TRANSITIONS — morph between grid modes.
-   Browsers with native support (Chrome 111+, Safari 18+,
-   Edge) interpolate snapshots automatically. Firefox and
-   reduced-motion users see an instant change (no fallback
-   animation library — keeps the bundle small).
+   VIEW TRANSITIONS — single root-level crossfade between
+   grid modes. We intentionally DO NOT tag images with
+   per-image view-transition-name: per-image morphing
+   captures full bitmap snapshots and the GPU interpolation
+   gets glitchy with multi-MB images. One root snapshot
+   crossfade is smooth even with heavy assets.
+   Firefox / reduced-motion / older browsers — instant.
    ==================================================== */
 @media (min-width: 62em) and (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
-    animation-duration: 0.5s;
-    animation-timing-function: cubic-bezier(.32, .72, 0, 1);
-  }
-  /* Per-image groups morph individually with the same easing.
-     The names are set by portfolio.js on toggle (.project-image[i]). */
-  ::view-transition-group(.vsh-morph-img) {
     animation-duration: 0.5s;
     animation-timing-function: cubic-bezier(.32, .72, 0, 1);
   }
@@ -138,14 +131,12 @@ html.lenis {
     display: block;
     position: absolute;
     inset-block-start: 0;
+    inset-inline: 0;                            /* full-width single zone */
     block-size: var(--vsh-grid-zone-h, 30vh);
-    inline-size: 50vw;
     z-index: 5;
     cursor: pointer; /* native pointer stays visible; the magnetic pill rides alongside */
     /* invisible — no background, no border */
   }
-  .vsh-grid-zone.is-left  { inset-inline-start: 0; }
-  .vsh-grid-zone.is-right { inset-inline-end: 0; }
   /* .navigation-top already sits above us (position: fixed; z-index: 999). */
 }
 
@@ -172,6 +163,10 @@ html.lenis {
   letter-spacing: 0;
   will-change: transform;
   transform: translate3d(-9999px, -9999px, 0);
+  /* CSS translate is independent of JS-set transform: shifts the box up
+     by exactly its own height so the BOTTOM-left anchors at the JS
+     transform position. Net result: pill floats top-right of pointer. */
+  translate: 0 -100%;
   mix-blend-mode: difference; /* always readable over any image */
 }
 .vsh-grid-cursor.is-visible { opacity: 1; }

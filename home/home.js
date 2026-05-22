@@ -1288,7 +1288,9 @@
     }
     function paintSoundIcon(){
       if (!soundBtn) return;
-      soundBtn.textContent = soundOn ? 'Mute' : 'Sound';
+      // Label reflects current state, not the action to take —
+      // matches the passive style of the date/status meta nearby.
+      soundBtn.textContent = soundOn ? 'Sound on' : 'Sound mute';
     }
     if (inner){
       soundBtn = document.createElement('button');
@@ -1384,7 +1386,10 @@
       cX += dx * lerp;
       cY += dy * lerp;
       var off = getOffsetPx();
-      tag.style.transform = 'translate3d(' + (cX + off) + 'px,' + (cY + off) + 'px,0)';
+      // Y is negative so the BOTTOM of the tag (CSS translate: 0 -100%
+      // shifts box up by its own height) sits ~0.25rem above pointer —
+      // tag floats top-right of pointer instead of bottom-right.
+      tag.style.transform = 'translate3d(' + (cX + off) + 'px,' + (cY - off) + 'px,0)';
       if (Math.abs(tX - cX) > 0.1 || Math.abs(tY - cY) > 0.1) raf = requestAnimationFrame(followLoop);
       else { ticking = false; raf = null; }
     }

@@ -396,12 +396,13 @@
 
 /* ============================================
    PORTFOLIO GRID SWITCHER
-   Three modes — default (1-col full-width, current),
-   2-col, 4-col — toggled by clicking empty space on
-   the left or right of the top section. Desktop only.
+   Two modes — default (1-col full-width) and 2-col
+   (Pinterest masonry). Clicking the full-width zone
+   above the first project toggles between them.
+   Desktop only.
 
-   LEFT zone  →  toggles 2-col   (cursor: "Grid: 2 column" ↔ "Grid: Default")
-   RIGHT zone →  toggles 4-col   (cursor: "Grid: 4 column" ↔ "Grid: Default")
+   Cursor pill: "2 Column" by default, "Default View"
+   when 2-col is currently active.
 
    Mode persists in localStorage under vsh_portfolio_grid_v1.
    ============================================ */
@@ -419,7 +420,7 @@
   function readMode() {
     try {
       var v = localStorage.getItem(STORAGE_KEY);
-      if (v === '2' || v === '4') return v;
+      if (v === '2') return v;
     } catch (e) {}
     return 'default';
   }
@@ -441,28 +442,18 @@
   }
 
   // Morph between modes using the View Transitions API where available.
-  // Tags every project image with a unique view-transition-name so browsers
-  // can interpolate per-image position + size during the layout swap.
-  // Falls back to instant applyMode() on Firefox / older browsers / reduced
-  // motion — no JS animation library, keeps the page light.
+  // Single root-level snapshot crossfade — we intentionally do NOT tag
+  // individual images with view-transition-name. Per-image morphing
+  // captures bitmap snapshots of every image and interpolates them on
+  // the GPU; with multi-MB portfolio assets that gets glitchy. One root
+  // snapshot is a single image-like surface the browser crossfades in
+  // 0.5s — smooth regardless of how heavy the underlying images are.
+  // Firefox / older browsers / reduced motion → instant applyMode().
   function applyModeMorph(m) {
     var supportsVT = typeof document.startViewTransition === 'function';
     var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!supportsVT || reduced) { applyMode(m); return; }
-
-    var imgs = document.querySelectorAll('.project-images > img');
-    imgs.forEach(function (img, i) {
-      img.style.viewTransitionName = 'vsh-img-' + i;
-      img.classList.add('vsh-morph-img'); // hook for CSS easing target
-    });
-
-    var t = document.startViewTransition(function () { applyMode(m); });
-    t.finished.finally(function () {
-      imgs.forEach(function (img) {
-        img.style.viewTransitionName = '';
-        img.classList.remove('vsh-morph-img');
-      });
-    });
+    document.startViewTransition(function () { applyMode(m); });
   }
 
   function init() {
@@ -485,17 +476,12 @@
     var cs = getComputedStyle(pageWrapper);
     if (cs.position === 'static') pageWrapper.style.position = 'relative';
 
-    // -------- zones --------
-    var leftZone  = document.createElement('div');
-    var rightZone = document.createElement('div');
-    leftZone.className  = 'vsh-grid-zone is-left';
-    rightZone.className = 'vsh-grid-zone is-right';
-    leftZone.setAttribute('role', 'button');
-    rightZone.setAttribute('role', 'button');
-    leftZone.setAttribute('aria-label',  'Toggle 2-column grid');
-    rightZone.setAttribute('aria-label', 'Toggle 4-column grid');
-    pageWrapper.appendChild(leftZone);
-    pageWrapper.appendChild(rightZone);
+    // -------- zone (single, full-width) --------
+    var zone = document.createElement('div');
+    zone.className = 'vsh-grid-zone';
+    zone.setAttribute('role', 'button');
+    zone.setAttribute('aria-label', 'Toggle 2-column grid');
+    pageWrapper.appendChild(zone);
 
     function measureZoneHeight() {
       // Distance from top of page-wrapper to first content node inside
@@ -565,11 +551,8 @@
       if (maskBusy) { pendingLabel = next; return; }
       commitSwitch(next);
     }
-    function labelForZone(zone) {
-      var mode = readMode();
-      if (zone === 'left')  return mode === '2' ? 'Default View' : '2 Column';
-      if (zone === 'right') return mode === '4' ? 'Default View' : '4 Column';
-      return '';
+    function labelForCurrentMode() {
+      return readMode() === '2' ? 'Default View' : '2 Column';
     }
 
     // -------- adaptive lerp follower (matches stories pattern) --------
@@ -589,7 +572,10 @@
       cX += dx * lerp;
       cY += dy * lerp;
       var off = getOffsetPx();
-      tag.style.transform = 'translate3d(' + (cX + off) + 'px,' + (cY + off) + 'px,0)';
+      // Y is negative so the BOTTOM of the pill (CSS translate: 0 -100%
+      // shifts the box up by its own height) sits ~0.25rem above pointer.
+      // Result: pill floats top-right of pointer, not bottom-right.
+      tag.style.transform = 'translate3d(' + (cX + off) + 'px,' + (cY - off) + 'px,0)';
       if (Math.abs(tX - cX) > 0.1 || Math.abs(tY - cY) > 0.1) {
         raf = requestAnimationFrame(followLoop);
       } else {
@@ -598,25 +584,20 @@
     }
     function kickFollow() { if (!ticking) { ticking = true; raf = requestAnimationFrame(followLoop); } }
 
-    var hoveredZone = null;
-    function setHoveredZone(zone) {
-      hoveredZone = zone;
-      if (!zone) {
-        tag.classList.remove('is-visible');
-        return;
-      }
-      switchLabel(labelForZone(zone));
+    var isHovered = false;
+    function setHovered(on) {
+      isHovered = on;
+      if (!on) { tag.classList.remove('is-visible'); return; }
+      switchLabel(labelForCurrentMode());
       tag.classList.add('is-visible');
     }
 
-    leftZone.addEventListener('mouseenter',  function () { setHoveredZone('left');  });
-    leftZone.addEventListener('mouseleave',  function () { setHoveredZone(null);    });
-    rightZone.addEventListener('mouseenter', function () { setHoveredZone('right'); });
-    rightZone.addEventListener('mouseleave', function () { setHoveredZone(null);    });
+    zone.addEventListener('mouseenter', function () { setHovered(true);  });
+    zone.addEventListener('mouseleave', function () { setHovered(false); });
 
     var lastMoveAt = 0, MOVE_THROTTLE_MS = 16;
     document.addEventListener('mousemove', function (e) {
-      if (!hoveredZone) return;
+      if (!isHovered) return;
       var now = Date.now();
       if (now - lastMoveAt < MOVE_THROTTLE_MS) return;
       lastMoveAt = now;
@@ -625,17 +606,12 @@
       kickFollow();
     });
 
-    // -------- click handlers --------
-    leftZone.addEventListener('click', function () {
+    // -------- click handler — toggle default ↔ 2-col --------
+    zone.addEventListener('click', function () {
       var m = readMode();
       applyModeMorph(m === '2' ? 'default' : '2');
       // Refresh label immediately to reflect the new active state.
-      switchLabel(labelForZone('left'));
-    });
-    rightZone.addEventListener('click', function () {
-      var m = readMode();
-      applyModeMorph(m === '4' ? 'default' : '4');
-      switchLabel(labelForZone('right'));
+      switchLabel(labelForCurrentMode());
     });
 
     // -------- viewport changes --------
@@ -649,7 +625,7 @@
             document.body.removeAttribute('data-grid');
           }
           tag.classList.remove('is-visible');
-          hoveredZone = null;
+          isHovered = false;
         } else {
           // Re-apply stored mode when returning to desktop.
           var m = readMode();
