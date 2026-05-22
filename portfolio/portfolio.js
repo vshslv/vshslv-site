@@ -22,7 +22,12 @@
     isLoaderVisible: false,
     lenis: null,
     isLoaderReady: false,
-    isDesktop: window.innerWidth > config.desktopBreakpoint
+    isDesktop: window.innerWidth > config.desktopBreakpoint,
+    // Loader sync — finale runs only when BOTH gates fire (drift finished
+    // its 2s 0→70% sweep AND the gate image loaded). See maybeStartFinale.
+    driftDone: false,
+    imagesReady: false,
+    finaleStarted: false
   };
 
   // -------- UTILITIES --------
@@ -92,27 +97,38 @@
     window.dispatchEvent(new Event('loaderFinished'));
   }
 
+  // Coordinates the two gates that must both fire before the loader
+  // closes: the 0→70% drift tween completes AND the gate image loads.
+  // Without this gate, a fast-CDN image often loaded BEFORE the 2s drift
+  // finished, so the old code overwrote the in-flight drift and jumped
+  // straight from ~30% to 100% — skipping the 70% plateau visible on
+  // home and about. With this gate, whichever signal arrives last starts
+  // the finale; the 70% pause emerges naturally on slow networks.
+  function maybeStartFinale(loaderProgress) {
+    if (!state.driftDone || !state.imagesReady || state.finaleStarted) return;
+    state.finaleStarted = true;
+    setTimeout(() => {
+      gsap.to(loaderProgress, {
+        width: "100%",
+        duration: 0.5,
+        ease: "power2.out",
+        onComplete: () => endLoaderAnimation(
+          document.querySelector('.loader'),
+          loaderProgress,
+          document.querySelector('.trigger')
+        )
+      });
+    }, 100);
+  }
+
   function handleImageLoad(loaderProgress) {
     state.imagesLoaded++;
     const denom = state.totalImages || 1;
     state.counter.value = Math.min(70 + (state.imagesLoaded / denom) * 30, 100);
 
     if (state.imagesLoaded >= state.totalImages) {
-      // First project finished loading — animate the bar the rest of the way
-      // (overwriting the in-flight 0→70% drift) and close the loader.
-      setTimeout(() => {
-        gsap.to(loaderProgress, {
-          width: "100%",
-          duration: 0.5,
-          ease: "power2.out",
-          overwrite: "auto",
-          onComplete: () => endLoaderAnimation(
-            document.querySelector('.loader'),
-            loaderProgress,
-            document.querySelector('.trigger')
-          )
-        });
-      }, 100);
+      state.imagesReady = true;
+      maybeStartFinale(loaderProgress);
     }
   }
 
@@ -219,12 +235,18 @@
       watchImage(loaderGateImage, () => handleImageLoad(loaderProgress));
 
       // Soft 2s drift from 0 to 70% — visual "we're working" indicator.
-      // The remaining 70 → 100% is driven by real load completion in
-      // handleImageLoad, which also overwrites this tween if needed.
+      // The finale (70 → 100%) waits for BOTH this drift to finish AND
+      // the gate image to load. Whichever lands last fires the finale.
+      // Result: a real 70% plateau on slow networks, matching the home
+      // and about loaders, instead of skipping straight to 100%.
       gsap.to(loaderProgress, {
         width: "70%",
         duration: 2,
-        ease: CustomEase.create("custom", config.customEase)
+        ease: CustomEase.create("custom", config.customEase),
+        onComplete: () => {
+          state.driftDone = true;
+          maybeStartFinale(loaderProgress);
+        }
       });
     }
 
