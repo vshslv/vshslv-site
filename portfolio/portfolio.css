@@ -92,12 +92,39 @@ html.lenis {
   body[data-grid="2"] .project-images { grid-template-columns: 1.25fr 1.25fr; }
   body[data-grid="4"] .project-images { grid-template-columns: repeat(4, 1.25fr); }
 
-  /* Each <img> fills its grid cell. height:auto preserves aspect ratio. */
+  /* Each <img> fills its grid cell. height:auto preserves aspect ratio.
+     !important on grid-area is intentional: every .project-images > img
+     carries a Webflow w-node ID with an explicit grid-area placement
+     (e.g. 1/1/2/3, span 1/span 2) intended for the Designer's original
+     6-col layout. Those ID rules have higher specificity than ours and
+     would otherwise force images to span across our 2/4-col cells. */
   body[data-grid="2"] .project-images > img,
   body[data-grid="4"] .project-images > img {
+    grid-area: auto !important; /* why: override Webflow w-node placements */
     inline-size: 100%;
     block-size: auto;
     object-fit: cover;
+  }
+}
+
+/* ====================================================
+   VIEW TRANSITIONS — morph between grid modes.
+   Browsers with native support (Chrome 111+, Safari 18+,
+   Edge) interpolate snapshots automatically. Firefox and
+   reduced-motion users see an instant change (no fallback
+   animation library — keeps the bundle small).
+   ==================================================== */
+@media (min-width: 62em) and (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.5s;
+    animation-timing-function: cubic-bezier(.32, .72, 0, 1);
+  }
+  /* Per-image groups morph individually with the same easing.
+     The names are set by portfolio.js on toggle (.project-image[i]). */
+  ::view-transition-group(.vsh-morph-img) {
+    animation-duration: 0.5s;
+    animation-timing-function: cubic-bezier(.32, .72, 0, 1);
   }
 }
 

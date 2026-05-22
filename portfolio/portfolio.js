@@ -418,6 +418,31 @@
     }
   }
 
+  // Morph between modes using the View Transitions API where available.
+  // Tags every project image with a unique view-transition-name so browsers
+  // can interpolate per-image position + size during the layout swap.
+  // Falls back to instant applyMode() on Firefox / older browsers / reduced
+  // motion — no JS animation library, keeps the page light.
+  function applyModeMorph(m) {
+    var supportsVT = typeof document.startViewTransition === 'function';
+    var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!supportsVT || reduced) { applyMode(m); return; }
+
+    var imgs = document.querySelectorAll('.project-images > img');
+    imgs.forEach(function (img, i) {
+      img.style.viewTransitionName = 'vsh-img-' + i;
+      img.classList.add('vsh-morph-img'); // hook for CSS easing target
+    });
+
+    var t = document.startViewTransition(function () { applyMode(m); });
+    t.finished.finally(function () {
+      imgs.forEach(function (img) {
+        img.style.viewTransitionName = '';
+        img.classList.remove('vsh-morph-img');
+      });
+    });
+  }
+
   function init() {
     if (!isDesktop() || prefersNoHover()) return;
 
@@ -520,8 +545,8 @@
     }
     function labelForZone(zone) {
       var mode = readMode();
-      if (zone === 'left')  return mode === '2' ? 'Grid: Default' : 'Grid: 2 column';
-      if (zone === 'right') return mode === '4' ? 'Grid: Default' : 'Grid: 4 column';
+      if (zone === 'left')  return mode === '2' ? 'Default View' : '2 Column';
+      if (zone === 'right') return mode === '4' ? 'Default View' : '4 Column';
       return '';
     }
 
@@ -581,13 +606,13 @@
     // -------- click handlers --------
     leftZone.addEventListener('click', function () {
       var m = readMode();
-      applyMode(m === '2' ? 'default' : '2');
+      applyModeMorph(m === '2' ? 'default' : '2');
       // Refresh label immediately to reflect the new active state.
       switchLabel(labelForZone('left'));
     });
     rightZone.addEventListener('click', function () {
       var m = readMode();
-      applyMode(m === '4' ? 'default' : '4');
+      applyModeMorph(m === '4' ? 'default' : '4');
       switchLabel(labelForZone('right'));
     });
 
