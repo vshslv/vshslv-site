@@ -141,7 +141,7 @@ html.lenis {
     block-size: var(--vsh-grid-zone-h, 30vh);
     inline-size: 50vw;
     z-index: 5;
-    cursor: none; /* magnetic pill is the affordance */
+    cursor: pointer; /* native pointer stays visible; the magnetic pill rides alongside */
     /* invisible — no background, no border */
   }
   .vsh-grid-zone.is-left  { inset-inline-start: 0; }
