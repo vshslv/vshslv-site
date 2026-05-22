@@ -371,3 +371,245 @@
 
   window.VshPortfolio.ready = true;
 })();
+
+/* ============================================
+   PORTFOLIO GRID SWITCHER
+   Three modes — default (1-col full-width, current),
+   2-col, 4-col — toggled by clicking empty space on
+   the left or right of the top section. Desktop only.
+
+   LEFT zone  →  toggles 2-col   (cursor: "Grid: 2 column" ↔ "Grid: Default")
+   RIGHT zone →  toggles 4-col   (cursor: "Grid: 4 column" ↔ "Grid: Default")
+
+   Mode persists in localStorage under vsh_portfolio_grid_v1.
+   ============================================ */
+(function () {
+  if (window.VshPortfolioGrid) return;
+  window.VshPortfolioGrid = { ready: false };
+
+  var STORAGE_KEY = 'vsh_portfolio_grid_v1';
+  var DESKTOP_MIN_PX = 992;          // matches @media (min-width: 62em) in CSS
+  var ZONE_FALLBACK_VH = 30;         // initial zone height before measurement
+
+  function isDesktop() { return window.innerWidth >= DESKTOP_MIN_PX; }
+  function prefersNoHover() { return matchMedia('(hover: none)').matches; }
+
+  function readMode() {
+    try {
+      var v = localStorage.getItem(STORAGE_KEY);
+      if (v === '2' || v === '4') return v;
+    } catch (e) {}
+    return 'default';
+  }
+  function writeMode(m) {
+    try { localStorage.setItem(STORAGE_KEY, m); } catch (e) {}
+  }
+
+  function applyMode(m) {
+    var b = document.body;
+    if (m === 'default') b.removeAttribute('data-grid');
+    else b.setAttribute('data-grid', m);
+    writeMode(m);
+    // Lenis tracks document height — kick it after layout settles.
+    if (window.lenis && typeof window.lenis.resize === 'function') {
+      requestAnimationFrame(function () {
+        try { window.lenis.resize(); } catch (e) {}
+      });
+    }
+  }
+
+  function init() {
+    if (!isDesktop() || prefersNoHover()) return;
+
+    var pageWrapper = document.querySelector('.page-wrapper');
+    var firstProject = document.querySelector('.project-item');
+    if (!pageWrapper || !firstProject) return;
+
+    // Need a positioned ancestor for the absolute zones.
+    var cs = getComputedStyle(pageWrapper);
+    if (cs.position === 'static') pageWrapper.style.position = 'relative';
+
+    // -------- zones --------
+    var leftZone  = document.createElement('div');
+    var rightZone = document.createElement('div');
+    leftZone.className  = 'vsh-grid-zone is-left';
+    rightZone.className = 'vsh-grid-zone is-right';
+    leftZone.setAttribute('role', 'button');
+    rightZone.setAttribute('role', 'button');
+    leftZone.setAttribute('aria-label',  'Toggle 2-column grid');
+    rightZone.setAttribute('aria-label', 'Toggle 4-column grid');
+    pageWrapper.appendChild(leftZone);
+    pageWrapper.appendChild(rightZone);
+
+    function measureZoneHeight() {
+      // Distance from top of page-wrapper to top of first project.
+      var pageTop = pageWrapper.getBoundingClientRect().top + window.scrollY;
+      var projTop = firstProject.getBoundingClientRect().top + window.scrollY;
+      var h = Math.max(0, projTop - pageTop);
+      pageWrapper.style.setProperty('--vsh-grid-zone-h', h + 'px');
+    }
+    measureZoneHeight();
+    window.addEventListener('resize', measureZoneHeight);
+    if ('ResizeObserver' in window) {
+      try {
+        new ResizeObserver(measureZoneHeight).observe(firstProject);
+      } catch (e) {}
+    }
+    // Loader-driven late layout: recompute after loader closes + a tick later.
+    window.addEventListener('loaderFinished', function () {
+      requestAnimationFrame(measureZoneHeight);
+      setTimeout(measureZoneHeight, 600);
+    });
+
+    // -------- magnetic cursor pill --------
+    var tag    = document.createElement('div');
+    var mask   = document.createElement('span');
+    var layerA = document.createElement('span');
+    var layerB = document.createElement('span');
+    tag.className    = 'vsh-grid-cursor';
+    mask.className   = 'vsh-grid-cursor_mask';
+    layerA.className = 'vsh-grid-cursor_layer';
+    layerB.className = 'vsh-grid-cursor_layer is-below';
+    layerA.textContent = '';
+    layerB.setAttribute('aria-hidden', 'true');
+    mask.appendChild(layerA);
+    mask.appendChild(layerB);
+    tag.appendChild(mask);
+    document.body.appendChild(tag);
+
+    var activeLayer = layerA, hiddenLayer = layerB;
+    var currentLabel = '', maskBusy = false, pendingLabel = null;
+
+    function commitSwitch(next) {
+      maskBusy = true;
+      currentLabel = next;
+      hiddenLayer.textContent = next;
+      var outgoing = activeLayer, incoming = hiddenLayer;
+      outgoing.classList.add('is-out');
+      incoming.classList.remove('is-below');
+      activeLayer = incoming;
+      hiddenLayer = outgoing;
+      setTimeout(function () {
+        outgoing.classList.add('no-tx');
+        outgoing.classList.remove('is-out');
+        outgoing.classList.add('is-below');
+        void outgoing.offsetWidth;
+        outgoing.classList.remove('no-tx');
+        maskBusy = false;
+        if (pendingLabel !== null && pendingLabel !== currentLabel) {
+          var p = pendingLabel; pendingLabel = null;
+          commitSwitch(p);
+        }
+      }, 470); // > 450ms CSS transition
+    }
+    function switchLabel(next) {
+      if (!next) return;
+      if (next === currentLabel) { pendingLabel = null; return; }
+      if (maskBusy) { pendingLabel = next; return; }
+      commitSwitch(next);
+    }
+    function labelForZone(zone) {
+      var mode = readMode();
+      if (zone === 'left')  return mode === '2' ? 'Grid: Default' : 'Grid: 2 column';
+      if (zone === 'right') return mode === '4' ? 'Grid: Default' : 'Grid: 4 column';
+      return '';
+    }
+
+    // -------- adaptive lerp follower (matches stories pattern) --------
+    var LERP_NORMAL = 0.2;
+    var LERP_FAST = 0.4;
+    var FAST_DISTANCE_PX = 100;
+    function getOffsetPx() {
+      var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      return rem * 0.25;
+    }
+    var tX = -9999, tY = -9999, cX = -9999, cY = -9999;
+    var raf = null, ticking = false;
+    function followLoop() {
+      var dx = tX - cX, dy = tY - cY;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var lerp = dist > FAST_DISTANCE_PX ? LERP_FAST : LERP_NORMAL;
+      cX += dx * lerp;
+      cY += dy * lerp;
+      var off = getOffsetPx();
+      tag.style.transform = 'translate3d(' + (cX + off) + 'px,' + (cY + off) + 'px,0)';
+      if (Math.abs(tX - cX) > 0.1 || Math.abs(tY - cY) > 0.1) {
+        raf = requestAnimationFrame(followLoop);
+      } else {
+        ticking = false; raf = null;
+      }
+    }
+    function kickFollow() { if (!ticking) { ticking = true; raf = requestAnimationFrame(followLoop); } }
+
+    var hoveredZone = null;
+    function setHoveredZone(zone) {
+      hoveredZone = zone;
+      if (!zone) {
+        tag.classList.remove('is-visible');
+        return;
+      }
+      switchLabel(labelForZone(zone));
+      tag.classList.add('is-visible');
+    }
+
+    leftZone.addEventListener('mouseenter',  function () { setHoveredZone('left');  });
+    leftZone.addEventListener('mouseleave',  function () { setHoveredZone(null);    });
+    rightZone.addEventListener('mouseenter', function () { setHoveredZone('right'); });
+    rightZone.addEventListener('mouseleave', function () { setHoveredZone(null);    });
+
+    var lastMoveAt = 0, MOVE_THROTTLE_MS = 16;
+    document.addEventListener('mousemove', function (e) {
+      if (!hoveredZone) return;
+      var now = Date.now();
+      if (now - lastMoveAt < MOVE_THROTTLE_MS) return;
+      lastMoveAt = now;
+      tX = e.clientX; tY = e.clientY;
+      if (cX < -1000) { cX = tX; cY = tY; }
+      kickFollow();
+    });
+
+    // -------- click handlers --------
+    leftZone.addEventListener('click', function () {
+      var m = readMode();
+      applyMode(m === '2' ? 'default' : '2');
+      // Refresh label immediately to reflect the new active state.
+      switchLabel(labelForZone('left'));
+    });
+    rightZone.addEventListener('click', function () {
+      var m = readMode();
+      applyMode(m === '4' ? 'default' : '4');
+      switchLabel(labelForZone('right'));
+    });
+
+    // -------- viewport changes --------
+    var resizeTimer = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        if (!isDesktop()) {
+          // Collapse back to default on mobile so layout never shows a stale grid.
+          if (document.body.getAttribute('data-grid')) {
+            document.body.removeAttribute('data-grid');
+          }
+          tag.classList.remove('is-visible');
+          hoveredZone = null;
+        } else {
+          // Re-apply stored mode when returning to desktop.
+          var m = readMode();
+          if (m !== 'default') document.body.setAttribute('data-grid', m);
+        }
+      }, 120);
+    });
+
+    // -------- initial state --------
+    applyMode(readMode());
+
+    window.VshPortfolioGrid.ready = true;
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();

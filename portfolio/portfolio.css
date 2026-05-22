@@ -65,3 +65,121 @@ html.lenis {
     transition: none;
   }
 }
+
+/* ====================================================
+   GRID MODE SWITCHER
+   Default = single-column full-width (current behaviour).
+   On desktop only, the user can click empty space on the
+   left/right of the top section to switch to 2-col or 4-col
+   layouts. State lives on <body data-grid="default|2|4">.
+   ==================================================== */
+
+/* 2-col and 4-col modes — only above 991px (desktop) */
+@media (min-width: 62em) {
+  body[data-grid="2"] .project-images,
+  body[data-grid="4"] .project-images {
+    display: grid;
+    gap: 0.25rem;
+    align-items: start;
+  }
+  body[data-grid="2"] .project-images { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body[data-grid="4"] .project-images { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  /* Each <img> fills its grid cell. height:auto preserves aspect ratio. */
+  body[data-grid="2"] .project-images > img,
+  body[data-grid="4"] .project-images > img {
+    inline-size: 100%;
+    block-size: auto;
+    object-fit: cover;
+  }
+}
+
+/* ====================================================
+   CLICK ZONES — desktop only.
+   Injected by portfolio.js into .page-wrapper as
+   .vsh-grid-zone.is-left / .is-right. Live above the
+   first .project-item; height set via --vsh-grid-zone-h.
+   Navigation links sit above via their natural z-index.
+   ==================================================== */
+.vsh-grid-zone {
+  display: none; /* enabled by JS on desktop only */
+}
+
+@media (min-width: 62em) {
+  .vsh-grid-zone {
+    display: block;
+    position: absolute;
+    inset-block-start: 0;
+    block-size: var(--vsh-grid-zone-h, 30vh);
+    inline-size: 50vw;
+    z-index: 5;
+    cursor: none; /* magnetic pill is the affordance */
+    /* invisible — no background, no border */
+  }
+  .vsh-grid-zone.is-left  { inset-inline-start: 0; }
+  .vsh-grid-zone.is-right { inset-inline-end: 0; }
+
+  /* Navigation must stay clickable above the zones. */
+  .navigation-top { position: relative; z-index: 10; }
+}
+
+/* ====================================================
+   MAGNETIC CURSOR PILL
+   Mirrors the .stories-cursor-tag pattern from home.css:
+   fixed-positioned, mask + two layers that swap via
+   translateY(110%) → 0 → -110%. Adaptive lerp follower
+   is in portfolio.js.
+   ==================================================== */
+.vsh-grid-cursor {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .18s cubic-bezier(0.215, 0.61, 0.355, 1);
+  z-index: 10000;
+  color: #fff;
+  padding: 6px 10px;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  line-height: 1;
+  letter-spacing: 0;
+  will-change: transform;
+  transform: translate3d(-9999px, -9999px, 0);
+  mix-blend-mode: difference; /* always readable over any image */
+}
+.vsh-grid-cursor.is-visible { opacity: 1; }
+
+.vsh-grid-cursor_mask {
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+  vertical-align: top;
+  line-height: 1;
+  block-size: 1em;
+  min-inline-size: 8em; /* fits "Grid: 4 column" */
+  text-align: start;
+}
+.vsh-grid-cursor_layer {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  display: block;
+  text-align: start;
+  line-height: 1;
+  transition: transform .45s cubic-bezier(.65, .05, .2, 1);
+  will-change: transform;
+}
+.vsh-grid-cursor_layer.is-below { transform: translateY(110%); }
+.vsh-grid-cursor_layer.is-out   { transform: translateY(-110%); }
+.vsh-grid-cursor_layer.no-tx    { transition: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .vsh-grid-cursor_layer { transition: none; }
+}
+
+/* Hide cursor pill on touch / narrow viewports */
+@media (max-width: 61.99em), (hover: none) {
+  .vsh-grid-cursor { display: none; }
+}
