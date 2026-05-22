@@ -75,34 +75,28 @@ html.lenis {
    ==================================================== */
 
 /* 2-col and 4-col modes — only above 991px (desktop).
-   Column template + gap mirror .nav-links-wrp-desktop so the
-   image grid lines up with the site's existing vertical rhythm.
-   The page-wrapper's inline padding (0.315rem L / 0.63rem R)
-   is mirrored here so the OUTER edges of the image grid align
-   with the nav's outer edges too. */
+   Pinterest-style masonry via CSS columns: images flow top-to-bottom
+   per column in source order, packed tight (gap 0, no inline padding,
+   no break inside an image). We deliberately avoid `display: grid` so
+   the Webflow w-node grid-area placements stay inert — no specificity
+   fight, no !important needed. */
 @media (min-width: 62em) {
   body[data-grid="2"] .project-images,
   body[data-grid="4"] .project-images {
-    display: grid;
-    gap: 0.63rem;                          /* = .nav-links-wrp-desktop gap */
-    padding-inline-start: 0.315rem;        /* = .navigation-top padding-left */
-    padding-inline-end:   0.63rem;         /* = .navigation-top padding-right */
-    align-items: start;
+    column-gap: 0;
+    padding-inline: 0;
   }
-  body[data-grid="2"] .project-images { grid-template-columns: 1.25fr 1.25fr; }
-  body[data-grid="4"] .project-images { grid-template-columns: repeat(4, 1.25fr); }
+  body[data-grid="2"] .project-images { column-count: 2; }
+  body[data-grid="4"] .project-images { column-count: 4; }
 
-  /* Each <img> fills its grid cell. height:auto preserves aspect ratio.
-     !important on grid-area is intentional: every .project-images > img
-     carries a Webflow w-node ID with an explicit grid-area placement
-     (e.g. 1/1/2/3, span 1/span 2) intended for the Designer's original
-     6-col layout. Those ID rules have higher specificity than ours and
-     would otherwise force images to span across our 2/4-col cells. */
   body[data-grid="2"] .project-images > img,
   body[data-grid="4"] .project-images > img {
-    grid-area: auto !important; /* why: override Webflow w-node placements */
+    display: block;
     inline-size: 100%;
     block-size: auto;
+    margin: 0;
+    vertical-align: top;
+    break-inside: avoid;
     object-fit: cover;
   }
 }
