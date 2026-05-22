@@ -423,7 +423,16 @@
 
     var pageWrapper = document.querySelector('.page-wrapper');
     var firstProject = document.querySelector('.project-item');
-    if (!pageWrapper || !firstProject) return;
+    // The actual empty top area is .project-item's padding-top (45svh in
+    // current CSS). Use the FIRST CONTENT NODE inside the first project as
+    // the bottom anchor — its top edge sits below the padding, which is
+    // exactly where we want zones to end.
+    var firstContent = firstProject && (
+      firstProject.querySelector('.project-tittle') ||
+      firstProject.querySelector('.project-desc') ||
+      firstProject.firstElementChild
+    );
+    if (!pageWrapper || !firstProject || !firstContent) return;
 
     // Need a positioned ancestor for the absolute zones.
     var cs = getComputedStyle(pageWrapper);
@@ -442,17 +451,18 @@
     pageWrapper.appendChild(rightZone);
 
     function measureZoneHeight() {
-      // Distance from top of page-wrapper to top of first project.
+      // Distance from top of page-wrapper to first content node inside
+      // the first project (which sits below .project-item's padding-top).
       var pageTop = pageWrapper.getBoundingClientRect().top + window.scrollY;
-      var projTop = firstProject.getBoundingClientRect().top + window.scrollY;
-      var h = Math.max(0, projTop - pageTop);
+      var anchorTop = firstContent.getBoundingClientRect().top + window.scrollY;
+      var h = Math.max(0, anchorTop - pageTop);
       pageWrapper.style.setProperty('--vsh-grid-zone-h', h + 'px');
     }
     measureZoneHeight();
     window.addEventListener('resize', measureZoneHeight);
     if ('ResizeObserver' in window) {
       try {
-        new ResizeObserver(measureZoneHeight).observe(firstProject);
+        new ResizeObserver(measureZoneHeight).observe(firstContent);
       } catch (e) {}
     }
     // Loader-driven late layout: recompute after loader closes + a tick later.

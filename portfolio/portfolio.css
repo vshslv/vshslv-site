@@ -125,9 +125,7 @@ html.lenis {
   }
   .vsh-grid-zone.is-left  { inset-inline-start: 0; }
   .vsh-grid-zone.is-right { inset-inline-end: 0; }
-
-  /* Navigation must stay clickable above the zones. */
-  .navigation-top { position: relative; z-index: 10; }
+  /* .navigation-top already sits above us (position: fixed; z-index: 999). */
 }
 
 /* ====================================================
