@@ -540,10 +540,11 @@
   var THROTTLE_MS = 16;         // ~60fps cap on the rect math
 
   function findCvLinks() {
-    // Match by visible text rather than href: keeps the binding stable
-    // even if the CV asset URL changes, and skips other footer links
-    // (email, socials) that share the .general-link class.
-    return Array.from(document.querySelectorAll('a.general-link')).filter(function (a) {
+    // Match by visible text only — the CV anchor uses .general-link on
+    // home but .menu-link-dwnld on portfolio/about, so a class-based
+    // selector would miss two of the three pages. Text is the stable
+    // identifier (and still single-link per page).
+    return Array.from(document.querySelectorAll('a')).filter(function (a) {
       return /download\s*cv/i.test(a.textContent || '');
     });
   }
