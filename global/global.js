@@ -518,6 +518,110 @@
 })();
 
 /* ============================================
+   MAGNETIC DOWNLOAD CV
+   Desktop only. When the pointer enters a soft radius
+   around the "Download CV" .general-link (in .bottom-bar
+   on home, .footer-overlay on portfolio/about), the link
+   translates toward the cursor by a fraction of the offset.
+   Easing back to (0, 0) the moment the pointer steps
+   outside the radius. Composes cleanly with the existing
+   .ftd-m hover text-swap because we move the parent <a>
+   while the mask spans translate inside it.
+   ============================================ */
+(function () {
+  if (!matchMedia('(hover: hover)').matches) return;
+
+  var TRIGGER_RADIUS = 140;     // px from link centre
+  var STRENGTH = 0.4;           // 0..1 — how much the link follows
+  var FOLLOW_DUR = 0.4;
+  var RELEASE_DUR = 0.6;
+  var EASE_FOLLOW = 'power3.out';
+  var EASE_RELEASE = 'power3.out';
+  var THROTTLE_MS = 16;         // ~60fps cap on the rect math
+
+  function findCvLinks() {
+    // Match by visible text rather than href: keeps the binding stable
+    // even if the CV asset URL changes, and skips other footer links
+    // (email, socials) that share the .general-link class.
+    return Array.from(document.querySelectorAll('a.general-link')).filter(function (a) {
+      return /download\s*cv/i.test(a.textContent || '');
+    });
+  }
+
+  function bindLink(link) {
+    if (link.dataset.vshMagnetInit === '1') return;
+    link.dataset.vshMagnetInit = '1';
+    var gsap = window.gsap;
+    if (!gsap) return;
+
+    var xTo = gsap.quickTo(link, 'x', { duration: FOLLOW_DUR, ease: EASE_FOLLOW });
+    var yTo = gsap.quickTo(link, 'y', { duration: FOLLOW_DUR, ease: EASE_FOLLOW });
+    var isActive = false;
+    var lastMoveAt = 0;
+
+    function release() {
+      isActive = false;
+      gsap.to(link, { x: 0, y: 0, duration: RELEASE_DUR, ease: EASE_RELEASE });
+    }
+
+    window.addEventListener('mousemove', function (e) {
+      var now = Date.now();
+      if (now - lastMoveAt < THROTTLE_MS) return;
+      lastMoveAt = now;
+
+      var rect = link.getBoundingClientRect();
+      // Link hidden (e.g. footer-overlay still translated off-screen) —
+      // make sure we don't lock into an active state we can't release.
+      if (rect.width === 0 || rect.height === 0) {
+        if (isActive) release();
+        return;
+      }
+
+      var cx = rect.left + rect.width / 2;
+      var cy = rect.top + rect.height / 2;
+      var dx = e.clientX - cx;
+      var dy = e.clientY - cy;
+      // Squared distance vs squared radius — avoids the sqrt every move.
+      var distSq = dx * dx + dy * dy;
+      var radiusSq = TRIGGER_RADIUS * TRIGGER_RADIUS;
+
+      if (distSq < radiusSq) {
+        isActive = true;
+        xTo(dx * STRENGTH);
+        yTo(dy * STRENGTH);
+      } else if (isActive) {
+        release();
+      }
+    }, { passive: true });
+  }
+
+  function initWhenGsapReady(cb) {
+    if (typeof window.gsap !== 'undefined') { cb(); return; }
+    // Curtain IIFE loads GSAP defensively if Webflow's CDN bundle is
+    // missing — poll briefly so we don't race it on first paint.
+    var tries = 0;
+    var iv = setInterval(function () {
+      if (typeof window.gsap !== 'undefined' || ++tries > 100) {
+        clearInterval(iv);
+        if (typeof window.gsap !== 'undefined') cb();
+      }
+    }, 50);
+  }
+
+  function init() {
+    initWhenGsapReady(function () {
+      findCvLinks().forEach(bindLink);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+/* ============================================
    PAUSE VIDEOS WHEN TAB IS HIDDEN
    ============================================ */
 (function () {
