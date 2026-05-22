@@ -539,6 +539,16 @@
   var EASE_RELEASE = 'power3.out';
   var THROTTLE_MS = 16;         // ~60fps cap on the rect math
 
+  // Mirror the :hover text-swap (driven by buildHoverRules in the masks
+  // IIFE) for our magnet-active proximity state — :hover only fires when
+  // the cursor is over the link's box, but the magnet engages 140px out,
+  // so without this rule the swap lags behind the magnetic pull.
+  var style = document.createElement('style');
+  style.textContent =
+    '.vsh-magnet-active .ftd-mt{transform:translateY(-110%)}' +
+    '.vsh-magnet-active .ftd-mc{transform:translateY(0)}';
+  (document.head || document.documentElement).appendChild(style);
+
   function findCvLinks() {
     // Match by visible text only — the CV anchor uses .general-link on
     // home but .menu-link-dwnld on portfolio/about, so a class-based
@@ -560,8 +570,15 @@
     var isActive = false;
     var lastMoveAt = 0;
 
+    function activate() {
+      if (isActive) return;
+      isActive = true;
+      link.classList.add('vsh-magnet-active');
+    }
     function release() {
+      if (!isActive) return;
       isActive = false;
+      link.classList.remove('vsh-magnet-active');
       gsap.to(link, { x: 0, y: 0, duration: RELEASE_DUR, ease: EASE_RELEASE });
     }
 
@@ -574,7 +591,7 @@
       // Link hidden (e.g. footer-overlay still translated off-screen) —
       // make sure we don't lock into an active state we can't release.
       if (rect.width === 0 || rect.height === 0) {
-        if (isActive) release();
+        release();
         return;
       }
 
@@ -587,10 +604,10 @@
       var radiusSq = TRIGGER_RADIUS * TRIGGER_RADIUS;
 
       if (distSq < radiusSq) {
-        isActive = true;
+        activate();
         xTo(dx * STRENGTH);
         yTo(dy * STRENGTH);
-      } else if (isActive) {
+      } else {
         release();
       }
     }, { passive: true });
